@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
 	// doing everything twice shouldn't harm.
 	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::order), _1, o));
 	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::bringIn), _1, cf, false));
-	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::normalize), _1, cf));
+//	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::normalize), _1, cf));
 	// Create the f4 computer.
 	F4 f4;
 	// Compute the groebner basis for the polynomials in 'list' with 'threads' threads/processors 
