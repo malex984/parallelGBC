@@ -347,6 +347,8 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 
 void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 {
+  double timer = seconds();
+  
 	TermComparator tog(O, true);
 	set<const Term*, TermComparator> terms(tog);
 	vector<vector<F4Operation> > ops;
@@ -355,18 +357,14 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 	size_t upper = prepare(pairs, polys, ops, terms, rs);
 
 	// ELIMINATE
-	double timer = seconds();
 	pReduce(ops, rs);
-	ops.clear();
-	//timer = seconds();
-
+  ops.clear();
+  
 	vector<bool> empty(upper, false); // too large, FIX?
 	
 	gauss(rs, upper, empty);
 	//cout << "GAUSSR:\t" << seconds()-timer << "\n";
 	// ELIMINATE END
-	reductionTime += seconds()-timer;
-	//cout << "REDUCE:\t" << seconds()-timer << "\n";
 	for(size_t i = 1; i < upper; i+=2)
 	{
 		if(!empty[i])
@@ -385,7 +383,10 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 		}
 	}
 	//cout << polys.size() << " new elements\n";
-	//postReduce(polys);
+  //postReduce(polys);
+  
+  reductionTime += seconds()-timer;
+  //cout << "REDUCE:\t" << seconds()-timer << "\n";
 }
 
 void F4::postReduce(vector<Polynomial>& polys) 
