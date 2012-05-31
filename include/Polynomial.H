@@ -32,30 +32,23 @@ class Polynomial {
 		degreeType sugarDegree;
 
 	public:
-		Polynomial(degreeType s) : sugarDegree(s) { }
-
 		// Create empty polynomial (equal to 0)
-		Polynomial() {
-			sugarDegree = 0;
-		}
-		
-		Polynomial(std::vector<Monomial>& ms) : monomials(ms)
+		Polynomial(degreeType s = 0) : sugarDegree(s) { }
+
+		Polynomial(std::vector<Monomial>& ms) : monomials(ms), sugarDegree(0)
 		{ 
 			if(ms.size() > 0)
 			{ 
 				sugarDegree = ms[0].second->deg();
 			}
-			else
-			{ 
-				sugarDegree = 0;
-			}
-		}
-		Polynomial(const Term* t) {
-			monomials.push_back(make_pair(1, t));
-			sugarDegree = t->deg();
 		}
 
-		Polynomial(vector<Monomial>& ms, bool purify) : monomials(ms)
+    Polynomial(const Term* t): sugarDegree(t->deg())
+    {
+			monomials.push_back(make_pair(1, t));
+		}
+
+		Polynomial(vector<Monomial>& ms, bool purify) : monomials(ms), sugarDegree(0)
 		{ 
 			if(ms.size() > 0)
 			{ 
@@ -122,9 +115,9 @@ class Polynomial {
 			return monomials[0].first;
 		}
 
-		void setSugar(degreeType s) {
-			sugarDegree = s;
-		}
+//		void setSugar(degreeType s) {
+//			sugarDegree = s;
+//		}
 
 		degreeType sugar() const {
 			return sugarDegree;
