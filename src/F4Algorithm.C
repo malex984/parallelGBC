@@ -290,12 +290,12 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 	for(size_t i = 0; i < rightSide.size(); i++) {
 		size_t j = 0;
 		size_t k = 0;
-		for(set<const Term*, TermComparator>::iterator it = terms.begin(); j < rightSide[i].size() /*&& it != terms.end()*/; it++) {
+		for(set<const Term*, TermComparator>::iterator it = terms.begin(); j < rightSide[i].size() /*&& it != terms.end()*/; it++, k++)
+		{
 			if(rightSide[i][j].second == *it) {
 				rs[i][k] = rightSide[i][j].first ;
 				j++;
 			}
-			k++;
 		}
 	}
 	rightSide.clear();
