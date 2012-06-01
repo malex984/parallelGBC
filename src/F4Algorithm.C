@@ -30,17 +30,21 @@
 #define BREAKPOINT {while(getchar() != '\n');}
 
 
-typedef std::vector<coeffType> Row;
+typedef std::vector<coeffType> CRow;
 
-class Matrix: private vector<Row>
+class Matrix: private vector<CRow>
 {
   private:
-    typedef vector<Row> Base;
+    typedef vector<CRow> Base;
 
   public:
+    typedef CRow Row;
+    
     Matrix(): Base()
     {
     }
+
+    // TODO: what about destructor???
 
     coeffType getEntry(const int i, const int j) const
     {
@@ -64,17 +68,18 @@ class Matrix: private vector<Row>
 
     static Matrix* allocate(const int r, const int c, const coeffType& defv = 0)
     {
-      Matrix* p = new Matrix(); p->assign(r, Row(c, defv) );
+      Matrix* p = new Matrix(); p->assign(r, CRow(c, defv) );
       return p;      
     }
 
-    Row& getRow(const int row)
+    CRow& getRow(const int row)
     {
       return (*this)[row];
     }
 };
 
-
+// typedef CMatrix Matrix;
+typedef CRow Row;
 
 typedef LELA::Modular<coeffType> LELARing;
 
