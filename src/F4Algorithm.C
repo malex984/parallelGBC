@@ -87,16 +87,17 @@ void my_row_echelon_form (const Ring &R, LELAMatrix& A,
 // LELARing R(field->getChar());
 
 
-typedef std::vector<coeffType> CRow;
+//typedef std::vector<coeffType> CRow;
 
-class Matrix: LelaDenseMatrix // private vector<CRow>
+class Matrix: private LelaDenseMatrix  // vector<CRow> // LelaDenseMatrix // TODO: LelaSparseMatrix :(((
 {
-  private:    
-    typedef LelaDenseMatrix Base;
+  private:
+//    typedef LelaSparseMatrix Base;    
+    typedef LelaDenseMatrix Base; 
 //    typedef vector<CRow> Base;
 
   public:
-    typedef CRow Row;
+//    typedef CRow Row;
     
     Matrix(): Base()
     {
