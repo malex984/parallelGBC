@@ -30,6 +30,9 @@
 #define BREAKPOINT {while(getchar() != '\n');}
 
 
+// LELARing R(field->getChar());
+
+
 typedef std::vector<coeffType> CRow;
 
 class Matrix: private vector<CRow>
@@ -54,6 +57,8 @@ class Matrix: private vector<CRow>
     void setEntry(const int i, const int j, const coeffType& v)
     {
       (*this)[i][j] = v;
+//      typename LelaDenseMatrix::Element x;        
+//      M->setEntry(i, k, R.init(x, rightSide[i][j].first));
     }
 
     std::size_t size() const
@@ -68,14 +73,16 @@ class Matrix: private vector<CRow>
 
     static Matrix* allocate(const int r, const int c, const coeffType& defv = 0)
     {
+//      LelaDenseMatrix* M = new LelaDenseMatrix(r, c);
+
       Matrix* p = new Matrix(); p->assign(r, CRow(c, defv) );
       return p;      
     }
 
-    CRow& getRow(const int row)
-    {
-      return (*this)[row];
-    }
+//     CRow& getRow(const int row)
+//     {
+//       return (*this)[row];
+//     }
 
     /// elementary op. on rows: [target] -= [oper] * (1/ factor)???
     void pReduce(const std::size_t target, const std::size_t oper, const coeffType factor, const CoeffField* const field)
@@ -99,6 +106,8 @@ class Matrix: private vector<CRow>
 
     void gauss(std::size_t upper, std::vector<bool>& empty, const CoeffField* const field)
     {
+//      LELA::my_row_echelon_form(R, *M, LELA::EchelonForm<LELARing>::METHOD_UNKNOWN, true);
+      
       for(std::size_t i = 1; i < upper; i+=2)
       {
         std::size_t p = 0;
@@ -362,8 +371,6 @@ void F4::pReduce(vector<vector<F4Operation> >& ops, Matrix* prs)
 
 size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4Operation> >& ops, set<const Term*, TermComparator>& terms, Matrix **prs)
 {
-  LELARing R(field->getChar());
-  
 	double timer = seconds();
 	// SELECTION
 	TermComparator tog(O, true);
@@ -451,32 +458,21 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 	size_t pad = __COEFF_FIELD_INTVECSIZE;
 
   *prs = Matrix::allocate(rightSide.size(), (( terms.size()+pad-1 )/ pad ) * pad, 0); 
+  Matrix& rs = **prs; 
 
-  Matrix& rs = **prs;
-  
-  
-
-  LelaDenseMatrix* M = new LelaDenseMatrix(rightSide.size(), (( terms.size()+pad-1 )/ pad ) * pad);
-  
 	for(size_t i = 0; i < rightSide.size(); i++) {
 		size_t j = 0;
 		size_t k = 0;
 		for(set<const Term*, TermComparator>::iterator it = terms.begin(); j < rightSide[i].size() /*&& it != terms.end()*/; it++, k++)
 		{
-			if(rightSide[i][j].second == *it) {
-        rs.setEntry(i, k, rightSide[i][j].first);
-        
-        typename LelaDenseMatrix::Element x;        
-        M->setEntry(i, k, R.init(x, rightSide[i][j].first));
+      if(rightSide[i][j].second == *it)
+      {
+        rs.setEntry(i, k, rightSide[i][j].first);        
 				j++;
 			}
 		}
   }
 
-  LELA::my_row_echelon_form(R, *M, LELA::EchelonForm<LELARing>::METHOD_UNKNOWN, true);
-
-  delete M;
-  
 	rightSide.clear();
 	
 	map<const Term*, vector<pair<size_t, coeffType> >, TermComparator> pivotOpsOrdered(pivotOps.begin(), pivotOps.end(), tog);
