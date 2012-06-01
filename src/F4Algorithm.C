@@ -15,8 +15,86 @@
  *  along with parallelGBC.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../include/F4Algorithm.H"
+
+#include "lela/util/commentator.h"
+#include "lela/blas/context.h"
+// #include "lela/ring/gf2.h"
+#include "lela/ring/modular.h"
+
+#include "lela/blas/level3.h"
+#include "lela/solutions/echelon-form.h"
+#include "lela/solutions/echelon-form-gf2.h"
+
+
 #include <stdio.h>
 #define BREAKPOINT {while(getchar() != '\n');}
+
+typedef LELA::Modular<coeffType> LELARing;
+
+typedef LELA::DenseMatrix<typename LELARing::Element> LelaDenseMatrix;
+typedef LELA::SparseMatrix<typename LELARing::Element> LelaSparseMatrix;
+
+
+// typedef LelaDenseMatrix Matrix;
+
+/*
+EchelonForm<Ring>::METHOD_STANDARD_GJ;
+EchelonForm<Ring>::METHOD_ASYMPTOTICALLY_FAST_GJ;
+EchelonForm<Ring>::METHOD_FAUGERE_LACHARTRE;
+EchelonForm<Ring>::METHOD_UNKNOWN;
+
+EchelonForm<GF2>::METHOD_M4RI
+*/
+
+// using namespace LELA;
+
+namespace LELA
+{
+  template <class Ring, class LELAMatrix>
+  void my_row_echelon_form (const Ring &R, LELAMatrix& A,
+                         typename EchelonForm<Ring>::Method method,
+                         bool reduced)
+  {
+    Context<Ring> ctx (R);
+
+    commentator.start ("Converting matrix to row-echelon-form", __FUNCTION__);
+
+    if (method == EchelonForm<Ring>::METHOD_FAUGERE_LACHARTRE && !reduced) {
+      reduced = true;
+      commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_WARNING)
+          << "Note: constructing reduced row-echelon form, since non-reduced form is not available with the chosen method" << std::endl;
+    }
+
+    EchelonForm<Ring> EF (ctx);
+
+    if (reduced)
+      commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_DESCRIPTION)
+          << "Computing reduced form" << std::endl;
+    else
+      commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_DESCRIPTION)
+          << "Computing non-reduced form" << std::endl;
+
+    try
+    {
+      EF.echelonize (A, reduced, method);
+    }
+    catch (LELAError e)
+    {
+      commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_ERROR) << e;
+      commentator.stop ("error");
+      throw e;
+    }
+    catch (...)
+    {
+      commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_ERROR)
+          << "Non-LELA exception occured during 'echelonize'" << std::endl;
+      commentator.stop ("error");
+      throw;
+    }
+
+    commentator.stop (MSG_DONE);
+  }
+}; // namespace LELA
 
 void F4::updatePairs(F4PairSet& pairs, vector<Polynomial>& polys, bool initial) 
 {
@@ -309,6 +387,8 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 //  rs.assign(rightSide.size(), vector<coeffType>( (( terms.size()+pad-1 )/ pad ) * pad, 0) );
   Matrix::allocate(rs, rightSide.size(), (( terms.size()+pad-1 )/ pad ) * pad, 0);
 
+  LelaDenseMatrix* M = new LelaDenseMatrix(rightSide.size(), (( terms.size()+pad-1 )/ pad ) * pad);
+  
 	for(size_t i = 0; i < rightSide.size(); i++) {
 		size_t j = 0;
 		size_t k = 0;
@@ -317,10 +397,17 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 			if(rightSide[i][j].second == *it) {
         rs.setEntry(i, k, rightSide[i][j].first);
         
+        typename LelaDenseMatrix::Element x;        
+        M->setEntry(i, k, R.init(x, rightSide[i][j].first));
 				j++;
 			}
 		}
-	}
+  }
+
+  LELA::my_row_echelon_form(R, *M, LELA::EchelonForm<LELARing>::METHOD_UNKNOWN, true);
+
+  delete M;
+  
 	rightSide.clear();
 	
 	map<const Term*, vector<pair<size_t, coeffType> >, TermComparator> pivotOpsOrdered(pivotOps.begin(), pivotOps.end(), tog);

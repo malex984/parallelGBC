@@ -28,15 +28,29 @@
  *  along with parallelGBC.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../include/F4.H"
+
+#include <boost/regex.hpp> 
+
+#include "lela/util/commentator.h"
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <boost/regex.hpp> 
 
 using namespace boost;
 using namespace std;
+using namespace LELA;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
+  commentator.setBriefReportParameters (Commentator::OUTPUT_CONSOLE, false, false, false);
+  
+  commentator.getMessageClass (INTERNAL_DESCRIPTION).setMaxDepth (4);
+  commentator.getMessageClass (INTERNAL_DESCRIPTION).setMaxDetailLevel (Commentator::LEVEL_NORMAL);
+  commentator.getMessageClass (TIMING_MEASURE).setMaxDepth (3);
+  commentator.getMessageClass (TIMING_MEASURE).setMaxDetailLevel (Commentator::LEVEL_NORMAL);
+  commentator.getMessageClass (PROGRESS_REPORT).setMaxDepth (3);
+  
 	// Input stuff, example below ...
 	
 	// Is there a file provided?
@@ -82,8 +96,8 @@ int main(int argc, char* argv[]) {
 	TOrdering* o = new DegRevLexOrdering(max);
 	// 2. Create a power product monoid for the terms. Pay attention that ordering and monoid match.
 	TMonoid m(max);
-	// 3. Create a coefficient field.
-	CoeffField* cf = new CoeffField(32003);
+  // 3. Create a coefficient field.
+  CoeffField* cf = new CoeffField(32003);
 	// 4. Read in the polynomials from string 't'. The second parameter is the power product monoid.
 	vector<Polynomial> list = Polynomial::createList(t, m);
 	// 5. Before you can compute the groebner basis, you have to order your polynomials by term
