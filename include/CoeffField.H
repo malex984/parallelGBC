@@ -96,7 +96,11 @@ class CoeffField
 		size_t s;
 
 	public:
-		CoeffField(coeffType modn);
+    CoeffField(coeffType modn);
+
+    /// return p of this Fp
+    inline coeffType getChar() const { return modn; }
+        
 		coeffType mul(coeffType a, coeffType b) const
 		{ 
 			if( a == 0 || b == 0 ) return 0;
@@ -123,9 +127,15 @@ class CoeffField
 			return c < modn ? c : c - modn;
 		}
 
-		coeffType getFactor(coeffType a) {
+    inline coeffType getLog(coeffType a) const
+    {
 			return logs[a];
-		}
+    }
+    
+    inline coeffType getExp(coeffType a) const
+    {
+      return exps[a];
+    }
 
 		// Attention: Not safe for b equal zero !
 		coeffType mulSub(coeffType a, coeffType b, coeffType c) const {

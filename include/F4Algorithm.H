@@ -16,6 +16,7 @@
 */
 #ifndef F4_ALGORITHM_H
 #define F4_ALGORITHM_H
+
 #include <set>
 #include <vector>
 #include <map>
@@ -80,9 +81,52 @@ class F4Operation {
 
 typedef set<F4Pair,F4PairComparator> F4PairSet;
 
+typedef std::vector<coeffType> Row;
+
+class Matrix: private vector<Row>
+{
+  private:
+    typedef vector<Row> Base;
+  
+  public:
+    Matrix(): Base()
+    {
+    }
+    
+    coeffType getEntry(const int i, const int j) const
+    {
+      return (*this)[i][j];
+    }
+
+    void setEntry(const int i, const int j, const coeffType& v)
+    {
+      (*this)[i][j] = v;
+    }
+
+    std::size_t size() const
+    {
+      return this->size();
+    }
+
+    std::size_t size(std::size_t row) const
+    {
+      return (*this)[row].size();
+    }
+    
+    static void allocate(Matrix& M, const int r, const int c, const coeffType& defv = 0)
+    {
+      M.assign(r, Row(c, defv) );
+    }
+
+    Row& getRow(const int row)
+    {
+      return (*this)[row];
+    }
+};
+
 class F4 {
 	public:
-		CoeffField* field;
+    CoeffField* field;
 		vector<Polynomial> groebnerBasis;
 		vector<bool> inGroebnerBasis;
 		const TOrdering* O;
@@ -94,11 +138,11 @@ class F4 {
 		double prepareTime;
 		double updateTime;
 
-		// select() is part of reduce
+    // select() is part of reduce
 		
-		void gauss(vector<vector<coeffType> >& matrix, size_t upper, vector<bool>& empty);
-		void pReduce(vector<vector<F4Operation> >& ops, vector<vector<coeffType> >& rs);
-		size_t prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4Operation> >& ops, set<const Term*, TermComparator>& terms, vector<vector<coeffType> >& rs);
+		void gauss(Matrix& pm, size_t upper, vector<bool>& empty);
+		void pReduce(vector<vector<F4Operation> >& ops, Matrix& prs);
+		size_t prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4Operation> >& ops, set<const Term*, TermComparator>& terms, Matrix& prs);
 		void reduce(F4PairSet& pairs, vector<Polynomial>& polys);
 		void postReduce(vector<Polynomial>& polys);
 		void updatePairs(F4PairSet& pairs, vector<Polynomial>& polys, bool initial = false);

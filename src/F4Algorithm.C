@@ -148,16 +148,16 @@ void printPolyMatrix(vector<Polynomial>& v, const TOrdering* O)
 	}
 }
 
-void F4::gauss(vector<vector<coeffType> >& matrix, size_t upper, vector<bool>& empty)
+void F4::gauss(Matrix& matrix, size_t upper, vector<bool>& empty)
 {
 	for(size_t i = 1; i < upper; i+=2)
 	{
 		size_t p = 0;
 		bool found = false;
 		coeffType factor = 0;
-		for(p = 0; !found && p < matrix[i].size(); p++) {
-			found = matrix[i][p] != 0;
-			factor = matrix[i][p];
+		for(p = 0; !found && p < matrix.size(i); p++) {
+      factor = matrix.getEntry(i, p);
+			found  = (factor != 0);
 		}
 		p--;
 		empty[i] = !found;
@@ -165,21 +165,21 @@ void F4::gauss(vector<vector<coeffType> >& matrix, size_t upper, vector<bool>& e
 			// Normalize
 			if(factor != 1) {
 				factor = field->inv(factor);
-				for(size_t j = p; j < matrix[i].size(); j++) {
-					matrix[i][j] = field->mul(matrix[i][j], factor);
+				for(size_t j = p; j < matrix.size(i); j++) {
+					matrix.setEntry(i, j, field->mul(matrix.getEntry(i, j), factor));
 				}
 			}
 			// Execute
-			#pragma omp parallel for num_threads( threads )
+//			#pragma omp parallel for num_threads( threads )
 			for(size_t j = 2; j < upper; j+=2)
 			{
 				size_t k = (i+j)%upper;
-				if(matrix[k][p] != 0) {
-					coeffType factor = field->getFactor(matrix[k][p]);
-					for(size_t m = p; m < matrix[k].size(); m++)
+				if(matrix.getEntry(k, p) != 0) {
+					coeffType factor = field->getLog(matrix.getEntry(k, p));
+					for(size_t m = p; m < matrix.size(k); m++)
 					{
 						// This is mulSub for primitives not vectors !
-						matrix[k][m] = field->mulSub(matrix[k][m], matrix[i][m], factor);
+						matrix.setEntry(k, m, field->mulSub(matrix.getEntry(k, m), matrix.getEntry(i, m), factor));
 					}
 				}
 			}
@@ -188,19 +188,39 @@ void F4::gauss(vector<vector<coeffType> >& matrix, size_t upper, vector<bool>& e
 
 }
 
-void F4::pReduce(vector<vector<F4Operation> >& ops, vector<vector<coeffType> >& rs)
+void F4::pReduce(vector<vector<F4Operation> >& ops, Matrix& rs)
 {
-	for(size_t i = 0; i < ops.size(); i++) {
-		#pragma omp parallel for num_threads( threads ) 
+  const coeffType modn = field->getChar();
+  
+  for(size_t i = 0; i < ops.size(); i++) {
+//		#pragma omp parallel for num_threads( threads ) 
 		for(size_t j = 0; j < ops[i].size(); j++)
-		{
-			field->mulSub(rs[ops[i][j].target], rs[ops[i][j].oper], ops[i][j].factor);
+    {
+      Row& t = rs.getRow(ops[i][j].target);
+      Row& o = rs.getRow(ops[i][j].oper);
+      
+      coeffType c = ops[i][j].factor;
+                   
+      c = field->getLog(c);
+      
+      for(size_t k = 0; k < o.size(); k++)
+      {
+        coeffType ok = o[k];
+        if(ok != 0)
+        {
+          coeffType b = field->getExp(field->getLog(ok) + c);
+          
+          t[k] = (b > t[k]) ? t[k] - b + modn : t[k] - b;	
+        }
+      }      
 		}
 	}
 }
 
-size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4Operation> >& ops, set<const Term*, TermComparator>& terms, vector<vector<coeffType> >& rs)
+size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4Operation> >& ops, set<const Term*, TermComparator>& terms, Matrix& rs)
 {
+  LELARing R(field->getChar());
+  
 	double timer = seconds();
 	// SELECTION
 	TermComparator tog(O, true);
@@ -286,14 +306,17 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 	//rs.assign(rightSide.size(), vector<coeffType>(terms.size(), 0) );
 
 	size_t pad = __COEFF_FIELD_INTVECSIZE;
-	rs.assign(rightSide.size(), vector<coeffType>( (( terms.size()+pad-1 )/ pad ) * pad, 0) );
+//  rs.assign(rightSide.size(), vector<coeffType>( (( terms.size()+pad-1 )/ pad ) * pad, 0) );
+  Matrix::allocate(rs, rightSide.size(), (( terms.size()+pad-1 )/ pad ) * pad, 0);
+
 	for(size_t i = 0; i < rightSide.size(); i++) {
 		size_t j = 0;
 		size_t k = 0;
 		for(set<const Term*, TermComparator>::iterator it = terms.begin(); j < rightSide[i].size() /*&& it != terms.end()*/; it++, k++)
 		{
 			if(rightSide[i][j].second == *it) {
-				rs[i][k] = rightSide[i][j].first ;
+        rs.setEntry(i, k, rightSide[i][j].first);
+        
 				j++;
 			}
 		}
@@ -352,12 +375,14 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 	TermComparator tog(O, true);
 	set<const Term*, TermComparator> terms(tog);
 	vector<vector<F4Operation> > ops;
-	vector<vector<coeffType> > rs;
+
+  Matrix rs;
 	//vector<vector<size_t> > setOffset; 
 	size_t upper = prepare(pairs, polys, ops, terms, rs);
 
 	// ELIMINATE
-	pReduce(ops, rs);
+  pReduce(ops, rs);
+
   ops.clear();
   
 	vector<bool> empty(upper, false); // too large, FIX?
@@ -372,11 +397,12 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 			Polynomial p(currentDegree);
 			size_t j = 0;
 			for(set<const Term*, TermComparator>::iterator it = terms.begin(); it != terms.end(); it++) 
-			{
-				if(rs[i][j] != 0)
-				{
-					p.push_back(make_pair(rs[i][j], *it));
-				}
+      {
+        const coeffType v = rs.getEntry(i, j);
+        
+				if(v != 0)
+          p.push_back(make_pair(v, *it));
+        
 				j++;
 			}
 			polys.push_back( p );
@@ -384,7 +410,7 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 	}
 	//cout << polys.size() << " new elements\n";
   //postReduce(polys);
-  
+
   reductionTime += seconds()-timer;
   //cout << "REDUCE:\t" << seconds()-timer << "\n";
 }
@@ -394,11 +420,12 @@ void F4::postReduce(vector<Polynomial>& polys)
 
 }
 
-
 vector<Polynomial> F4::operator()(vector<Polynomial>& generators, const TOrdering* o, CoeffField* field, int threads)
 {
-	double start = seconds();
-	this->field = field;
+  double start = seconds();
+  
+  this->field = field;
+  
 	this->threads = threads;
 	this->O = o;
 	F4PairComparator f4pc(o);
