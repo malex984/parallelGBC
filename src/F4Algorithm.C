@@ -29,6 +29,53 @@
 #include <stdio.h>
 #define BREAKPOINT {while(getchar() != '\n');}
 
+
+typedef std::vector<coeffType> Row;
+
+class Matrix: private vector<Row>
+{
+  private:
+    typedef vector<Row> Base;
+
+  public:
+    Matrix(): Base()
+    {
+    }
+
+    coeffType getEntry(const int i, const int j) const
+    {
+      return (*this)[i][j];
+    }
+
+    void setEntry(const int i, const int j, const coeffType& v)
+    {
+      (*this)[i][j] = v;
+    }
+
+    std::size_t size() const
+    {
+      return this->size();
+    }
+
+    std::size_t size(std::size_t row) const
+    {
+      return (*this)[row].size();
+    }
+
+    static Matrix* allocate(const int r, const int c, const coeffType& defv = 0)
+    {
+      Matrix* p = new Matrix(); p->assign(r, Row(c, defv) );
+      return p;      
+    }
+
+    Row& getRow(const int row)
+    {
+      return (*this)[row];
+    }
+};
+
+
+
 typedef LELA::Modular<coeffType> LELARing;
 
 typedef LELA::DenseMatrix<typename LELARing::Element> LelaDenseMatrix;
@@ -226,8 +273,10 @@ void printPolyMatrix(vector<Polynomial>& v, const TOrdering* O)
 	}
 }
 
-void F4::gauss(Matrix& matrix, size_t upper, vector<bool>& empty)
+void F4::gauss(Matrix* pmatrix, size_t upper, vector<bool>& empty)
 {
+  Matrix& matrix = *pmatrix;
+  
 	for(size_t i = 1; i < upper; i+=2)
 	{
 		size_t p = 0;
@@ -266,8 +315,10 @@ void F4::gauss(Matrix& matrix, size_t upper, vector<bool>& empty)
 
 }
 
-void F4::pReduce(vector<vector<F4Operation> >& ops, Matrix& rs)
+void F4::pReduce(vector<vector<F4Operation> >& ops, Matrix* prs)
 {
+  Matrix& rs = *prs;
+
   const coeffType modn = field->getChar();
   
   for(size_t i = 0; i < ops.size(); i++) {
@@ -295,7 +346,7 @@ void F4::pReduce(vector<vector<F4Operation> >& ops, Matrix& rs)
 	}
 }
 
-size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4Operation> >& ops, set<const Term*, TermComparator>& terms, Matrix& rs)
+size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4Operation> >& ops, set<const Term*, TermComparator>& terms, Matrix **prs)
 {
   LELARing R(field->getChar());
   
@@ -384,8 +435,12 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 	//rs.assign(rightSide.size(), vector<coeffType>(terms.size(), 0) );
 
 	size_t pad = __COEFF_FIELD_INTVECSIZE;
-//  rs.assign(rightSide.size(), vector<coeffType>( (( terms.size()+pad-1 )/ pad ) * pad, 0) );
-  Matrix::allocate(rs, rightSide.size(), (( terms.size()+pad-1 )/ pad ) * pad, 0);
+
+  *prs = Matrix::allocate(rightSide.size(), (( terms.size()+pad-1 )/ pad ) * pad, 0); 
+
+  Matrix& rs = **prs;
+  
+  
 
   LelaDenseMatrix* M = new LelaDenseMatrix(rightSide.size(), (( terms.size()+pad-1 )/ pad ) * pad);
   
@@ -463,9 +518,9 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 	set<const Term*, TermComparator> terms(tog);
 	vector<vector<F4Operation> > ops;
 
-  Matrix rs;
+  Matrix* rs;
 	//vector<vector<size_t> > setOffset; 
-	size_t upper = prepare(pairs, polys, ops, terms, rs);
+	size_t upper = prepare(pairs, polys, ops, terms, &rs);
 
 	// ELIMINATE
   pReduce(ops, rs);
@@ -485,7 +540,7 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 			size_t j = 0;
 			for(set<const Term*, TermComparator>::iterator it = terms.begin(); it != terms.end(); it++) 
       {
-        const coeffType v = rs.getEntry(i, j);
+        const coeffType v = rs->getEntry(i, j);
         
 				if(v != 0)
           p.push_back(make_pair(v, *it));
@@ -497,6 +552,8 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 	}
 	//cout << polys.size() << " new elements\n";
   //postReduce(polys);
+
+  delete rs;
 
   reductionTime += seconds()-timer;
   //cout << "REDUCE:\t" << seconds()-timer << "\n";
