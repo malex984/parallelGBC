@@ -76,6 +76,71 @@ class Matrix: private vector<CRow>
     {
       return (*this)[row];
     }
+
+    /// elementary op. on rows: [target] -= [oper] * (1/ factor)???
+    void pReduce(const std::size_t target, const std::size_t oper, const coeffType factor, const CoeffField* const field)
+    {
+      const coeffType modn = field->getChar();
+      const coeffType c = field->getLog( factor );
+
+      for(std::size_t k = 0; k < size(oper); k++)
+      {
+        const coeffType ok = getEntry(oper, k);
+        if(ok != 0)
+        {
+          const coeffType b = field->getExp(field->getLog(ok) + c);
+          const coeffType tk = getEntry(target, k);
+
+          setEntry(target, k, (b > tk) ? tk - b + modn : tk - b);	
+        }
+      }
+    }
+
+
+    void gauss(std::size_t upper, std::vector<bool>& empty, const CoeffField* const field)
+    {
+      for(std::size_t i = 1; i < upper; i+=2)
+      {
+        std::size_t p = 0;
+        bool found = false;
+        coeffType factor = 0;
+        
+        for(p = 0; !found && p < size(i); p++) {
+          factor = getEntry(i, p);
+          found  = (factor != 0);
+        }
+        p--;
+        empty[i] = !found;
+        
+        if(found)
+        {
+      // Normalize
+          if(factor != 1)
+          {
+            factor = field->inv(factor);
+            for(size_t j = p; j < size(i); j++)
+            {
+              setEntry(i, j, field->mul(getEntry(i, j), factor));
+            }
+          }
+      // Execute
+//			#pragma omp parallel for num_threads( threads )
+          for(std::size_t j = 2; j < upper; j+=2)
+          {
+            const std::size_t k = (i+j)%upper;
+            
+            if( getEntry(k, p) != 0) {
+              coeffType factor = field->getLog(getEntry(k, p));
+              for(std::size_t m = p; m < size(k); m++)
+              {
+            // This is mulSub for primitives not vectors !
+                setEntry(k, m, field->mulSub(getEntry(k, m), getEntry(i, m), factor));
+              }
+            }
+          }
+        }
+      }
+    }
 };
 
 // typedef CMatrix Matrix;
@@ -280,74 +345,18 @@ void printPolyMatrix(vector<Polynomial>& v, const TOrdering* O)
 
 void F4::gauss(Matrix* pmatrix, size_t upper, vector<bool>& empty)
 {
-  Matrix& matrix = *pmatrix;
-  
-	for(size_t i = 1; i < upper; i+=2)
-	{
-		size_t p = 0;
-		bool found = false;
-		coeffType factor = 0;
-		for(p = 0; !found && p < matrix.size(i); p++) {
-      factor = matrix.getEntry(i, p);
-			found  = (factor != 0);
-		}
-		p--;
-		empty[i] = !found;
-		if(found) {
-			// Normalize
-			if(factor != 1) {
-				factor = field->inv(factor);
-				for(size_t j = p; j < matrix.size(i); j++) {
-					matrix.setEntry(i, j, field->mul(matrix.getEntry(i, j), factor));
-				}
-			}
-			// Execute
-//			#pragma omp parallel for num_threads( threads )
-			for(size_t j = 2; j < upper; j+=2)
-			{
-				size_t k = (i+j)%upper;
-				if(matrix.getEntry(k, p) != 0) {
-					coeffType factor = field->getLog(matrix.getEntry(k, p));
-					for(size_t m = p; m < matrix.size(k); m++)
-					{
-						// This is mulSub for primitives not vectors !
-						matrix.setEntry(k, m, field->mulSub(matrix.getEntry(k, m), matrix.getEntry(i, m), factor));
-					}
-				}
-			}
-		}
-	}
-
+  pmatrix->gauss(upper, empty, field);
 }
 
 void F4::pReduce(vector<vector<F4Operation> >& ops, Matrix* prs)
 {
   Matrix& rs = *prs;
 
-  const coeffType modn = field->getChar();
-  
-  for(size_t i = 0; i < ops.size(); i++) {
+  for(size_t i = 0; i < ops.size(); i++)
+  {
 //		#pragma omp parallel for num_threads( threads ) 
 		for(size_t j = 0; j < ops[i].size(); j++)
-    {
-      Row& t = rs.getRow(ops[i][j].target);
-      Row& o = rs.getRow(ops[i][j].oper);
-      
-      coeffType c = ops[i][j].factor;
-                   
-      c = field->getLog(c);
-      
-      for(size_t k = 0; k < o.size(); k++)
-      {
-        coeffType ok = o[k];
-        if(ok != 0)
-        {
-          coeffType b = field->getExp(field->getLog(ok) + c);
-          
-          t[k] = (b > t[k]) ? t[k] - b + modn : t[k] - b;	
-        }
-      }      
-		}
+      rs.pReduce( ops[i][j].target, ops[i][j].oper, ops[i][j].factor, field);
 	}
 }
 
