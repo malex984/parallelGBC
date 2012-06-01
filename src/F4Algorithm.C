@@ -30,15 +30,70 @@
 #define BREAKPOINT {while(getchar() != '\n');}
 
 
+typedef LELA::Modular<coeffType> LELARing;
+
+typedef LELA::DenseMatrix<typename LELARing::Element> LelaDenseMatrix;
+typedef LELA::SparseMatrix<typename LELARing::Element> LelaSparseMatrix;
+
+
+using namespace LELA;
+
+template <class Ring, class LELAMatrix>
+void my_row_echelon_form (const Ring &R, LELAMatrix& A,
+                          typename EchelonForm<Ring>::Method method,
+                          bool reduced)
+{
+  Context<Ring> ctx (R);
+
+  commentator.start ("Converting matrix to row-echelon-form", __FUNCTION__);
+
+  if (method == EchelonForm<Ring>::METHOD_FAUGERE_LACHARTRE && !reduced) {
+    reduced = true;
+    commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_WARNING)
+        << "Note: constructing reduced row-echelon form, since non-reduced form is not available with the chosen method" << std::endl;
+  }
+
+  EchelonForm<Ring> EF (ctx);
+
+  if (reduced)
+    commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_DESCRIPTION)
+        << "Computing reduced form" << std::endl;
+  else
+    commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_DESCRIPTION)
+        << "Computing non-reduced form" << std::endl;
+
+  try
+  {
+    EF.echelonize (A, reduced, method);
+  }
+  catch (LELAError e)
+  {
+    commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_ERROR) << e;
+    commentator.stop ("error");
+    throw e;
+  }
+  catch (...)
+  {
+    commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_ERROR)
+        << "Non-LELA exception occured during 'echelonize'" << std::endl;
+    commentator.stop ("error");
+    throw;
+  }
+
+  commentator.stop (MSG_DONE);
+}
+
+
 // LELARing R(field->getChar());
 
 
 typedef std::vector<coeffType> CRow;
 
-class Matrix: private vector<CRow>
+class Matrix: LelaDenseMatrix // private vector<CRow>
 {
-  private:
-    typedef vector<CRow> Base;
+  private:    
+    typedef LelaDenseMatrix Base;
+//    typedef vector<CRow> Base;
 
   public:
     typedef CRow Row;
@@ -47,6 +102,10 @@ class Matrix: private vector<CRow>
     {
     }
 
+    Matrix(const int r, const int c): Base(r, c)
+    {      
+    }
+    
     // TODO: what about destructor???
 
     coeffType getEntry(const int i, const int j) const
@@ -63,20 +122,20 @@ class Matrix: private vector<CRow>
 
     std::size_t size() const
     {
-      return this->size();
+      return rowdim();
+//      return this->size();
     }
 
     std::size_t size(std::size_t row) const
     {
-      return (*this)[row].size();
+      return coldim();
+//      return (*this)[row].size();
     }
 
     static Matrix* allocate(const int r, const int c, const coeffType& defv = 0)
     {
-//      LelaDenseMatrix* M = new LelaDenseMatrix(r, c);
-
-      Matrix* p = new Matrix(); p->assign(r, CRow(c, defv) );
-      return p;      
+//    Matrix* p = new Matrix(); p->assign(r, CRow(c, defv) ); return p;
+      return new Matrix(r, c);      
     }
 
 //     CRow& getRow(const int row)
@@ -152,17 +211,6 @@ class Matrix: private vector<CRow>
     }
 };
 
-// typedef CMatrix Matrix;
-typedef CRow Row;
-
-typedef LELA::Modular<coeffType> LELARing;
-
-typedef LELA::DenseMatrix<typename LELARing::Element> LelaDenseMatrix;
-typedef LELA::SparseMatrix<typename LELARing::Element> LelaSparseMatrix;
-
-
-// typedef LelaDenseMatrix Matrix;
-
 /*
 EchelonForm<Ring>::METHOD_STANDARD_GJ;
 EchelonForm<Ring>::METHOD_ASYMPTOTICALLY_FAST_GJ;
@@ -172,55 +220,7 @@ EchelonForm<Ring>::METHOD_UNKNOWN;
 EchelonForm<GF2>::METHOD_M4RI
 */
 
-// using namespace LELA;
 
-namespace LELA
-{
-  template <class Ring, class LELAMatrix>
-  void my_row_echelon_form (const Ring &R, LELAMatrix& A,
-                         typename EchelonForm<Ring>::Method method,
-                         bool reduced)
-  {
-    Context<Ring> ctx (R);
-
-    commentator.start ("Converting matrix to row-echelon-form", __FUNCTION__);
-
-    if (method == EchelonForm<Ring>::METHOD_FAUGERE_LACHARTRE && !reduced) {
-      reduced = true;
-      commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_WARNING)
-          << "Note: constructing reduced row-echelon form, since non-reduced form is not available with the chosen method" << std::endl;
-    }
-
-    EchelonForm<Ring> EF (ctx);
-
-    if (reduced)
-      commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_DESCRIPTION)
-          << "Computing reduced form" << std::endl;
-    else
-      commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_DESCRIPTION)
-          << "Computing non-reduced form" << std::endl;
-
-    try
-    {
-      EF.echelonize (A, reduced, method);
-    }
-    catch (LELAError e)
-    {
-      commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_ERROR) << e;
-      commentator.stop ("error");
-      throw e;
-    }
-    catch (...)
-    {
-      commentator.report (Commentator::LEVEL_IMPORTANT, INTERNAL_ERROR)
-          << "Non-LELA exception occured during 'echelonize'" << std::endl;
-      commentator.stop ("error");
-      throw;
-    }
-
-    commentator.stop (MSG_DONE);
-  }
-}; // namespace LELA
 
 void F4::updatePairs(F4PairSet& pairs, vector<Polynomial>& polys, bool initial) 
 {
