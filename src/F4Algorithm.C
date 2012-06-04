@@ -331,12 +331,12 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
   //vector<vector<size_t> > setOffset; 
   size_t upper = prepare(pairs, polys, ops, terms, &rs);
    
-  cerr << "prepared matrix: " << *rs << endl;
+//  cerr << "prepared matrix: " << *rs << endl;
 
   // ELIMINATE
   pReduce(ops, rs);
 
-  cerr << "pReduced matrix: " << *rs << endl;
+//  cerr << "pReduced matrix: " << *rs << endl;
    
   ops.clear();
   
@@ -344,7 +344,7 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 	
   gauss(rs, upper, empty);
    
-  cerr << "Gaussed matrix: " << *rs << endl;  
+//  cerr << "Gaussed matrix: " << *rs << endl;  
    
   //cout << "GAUSSR:\t" << seconds()-timer << "\n";
   // ELIMINATE END
@@ -367,7 +367,7 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
     }
   }
 	
-  cerr << "Resulting polynomials: " << polys.size() << " new elements: \n" << polys << endl;
+//  cerr << "Resulting polynomials: " << polys.size() << " new elements: \n" << polys << endl;
    
   //postReduce(polys);
 

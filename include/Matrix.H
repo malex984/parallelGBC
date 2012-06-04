@@ -36,7 +36,7 @@ EchelonForm<GF2>::METHOD_M4RI
 */
 
 template <class Ring, class LELAMatrix>
-void my_row_echelon_form (const Ring &R, LELAMatrix& A,
+void _row_echelon_form (const Ring &R, LELAMatrix& A,
                           typename EchelonForm<Ring>::Method method,
                           bool reduced)
 {
@@ -88,7 +88,7 @@ void my_row_echelon_form (const Ring &R, LELAMatrix& A,
 
 #ifdef HAVE_LELA
 typedef LelaDenseMatrix BaseMatrix; 
-// typedef LelaSparseMatrix BaseMatrix;
+// typedef LelaSparseMatrix BaseMatrix; // NOTE: this would NOT work with the current LA (pReduce/gauss) implementations :/
 #else
 typedef std::vector<coeffType> CRow;
 typedef vector<CRow> BaseMatrix; 
@@ -124,7 +124,12 @@ class Matrix: private BaseMatrix
       return (*(Base*)this)[i][j];
 #else
       Element x = 0;
-      return ((Base*)this)->getEntry (x, i, j);
+      // Existing entry?
+      if (((Base*)this)->getEntry (x, i, j)) 
+        return x;
+      // default entry
+      Element y = 0;
+      return y;
 #endif
     }
 
@@ -134,9 +139,9 @@ class Matrix: private BaseMatrix
       (*(Base*)this)[i][j] = v;
 #else
 //      typename LelaDenseMatrix::Element x; R.init(x, v);
-      cerr << "setEntry[" << i << ", " << j << ", [" << v << "]) => ";
+//      cerr << "setEntry[" << i << ", " << j << ", [" << v << "]) => ";
       ((Base*)this)->setEntry(i, j, v);
-      cerr << getEntry(i, j) << endl;
+//      cerr << getEntry(i, j) << endl;
 #endif
     }
 
@@ -201,7 +206,7 @@ class Matrix: private BaseMatrix
 //          cerr << "tk': " << this->getEntry(target, k) << ", must be: " << field->mulSub(tk, ok, c);
         }
 	 
-        cerr << endl;
+//        cerr << endl;
       }
     }
 
@@ -209,7 +214,7 @@ class Matrix: private BaseMatrix
     void gauss(std::size_t upper, std::vector<bool>& empty, const CoeffField* const field)
     {
 //      LELARing R(field->getChar());
-//      LELA::my_row_echelon_form(R, *this, LELA::EchelonForm<LELARing>::METHOD_UNKNOWN, true);
+//      _row_echelon_form(R, *((BaseMatrix*)this), LELA::EchelonForm<LELARing>::METHOD_UNKNOWN, true);
       
       for(std::size_t i = 1; i < upper; i+=2)
       {
