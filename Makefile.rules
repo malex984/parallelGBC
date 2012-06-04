@@ -20,10 +20,11 @@
 # Set your Compiler. Attention you need a compiler which supports the  C++11 standard
 CXX = /usr/bin/g++
 
+# !!!!!!!!!!!!!!!!!!!!!!! TO BE CHANGED IN LELA is needed!!!!!!!!!!!!!!!!!!!!!!!
 LELA_CFLAGS= 
-# -I/GITHUB/w/LELA/include
+#-I/GITHUB/w/LELA/include -D'HAVE_LELA=1'
 LELA_LIBS= 
-# -L/GITHUB/w/LELA/lib /GITHUB/w/LELA/lib/liblela.a -lgmp -lgmpxx -lpng -lm4ri  -lcblas
+#-L/GITHUB/w/LELA/lib /GITHUB/w/LELA/lib/liblela.a -lgmp -lgmpxx -lpng -lm4ri  -lcblas
 
 # Configure CXXFLAGS. If you want to use parallelism do not remove "-fopenmp"
 # F4_THREADS is only a default parameter, the thread count can also be set at runtime.

@@ -16,8 +16,9 @@
 */
 #include "../include/F4Algorithm.H"
 
-/*
-#include "lela/util/commentator.h"
+#ifdef HAVE_LELA
+
+# include "lela/util/commentator.h"
 #include "lela/blas/context.h"
 // #include "lela/ring/gf2.h"
 #include "lela/ring/modular.h"
@@ -25,14 +26,17 @@
 #include "lela/blas/level3.h"
 #include "lela/solutions/echelon-form.h"
 #include "lela/solutions/echelon-form-gf2.h"
-*/
+
+#endif
+
 
 
 #include <stdio.h>
 #define BREAKPOINT {while(getchar() != '\n');}
 
 
-/*
+#ifdef HAVE_LELA
+
 typedef LELA::Modular<coeffType> LELARing;
 typedef LELA::DenseMatrix<typename LELARing::Element> LelaDenseMatrix;
 typedef LELA::SparseMatrix<typename LELARing::Element> LelaSparseMatrix;
@@ -87,15 +91,18 @@ void my_row_echelon_form (const Ring &R, LELAMatrix& A,
 
 
 // LELARing R(field->getChar());
-*/
+#endif
 
 
 
 typedef std::vector<coeffType> CRow;
 typedef vector<CRow> BaseMatrix; 
 
+
+#ifdef HAVE_LELA
 // typedef LelaDenseMatrix BaseMatrix; 
-// vector<CRow> // LelaDenseMatrix // TODO: LelaSparseMatrix :(((
+// typedef LelaSparseMatrix BaseMatrix; 
+#endif
 
 
 class Matrix: private BaseMatrix  
@@ -112,9 +119,11 @@ class Matrix: private BaseMatrix
     {
     }
 /*
+#ifdef HAVE_LELA
     Matrix(const int r, const int c): Base(r, c)
     {      
     }
+#endif
 */    
     // TODO: what about destructor???
 
@@ -190,7 +199,7 @@ class Matrix: private BaseMatrix
       }
     }
 
-
+    /// empty: flags indicating zero rows
     void gauss(std::size_t upper, std::vector<bool>& empty, const CoeffField* const field)
     {
 //      LELA::my_row_echelon_form(R, *M, LELA::EchelonForm<LELARing>::METHOD_UNKNOWN, true);

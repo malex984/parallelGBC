@@ -31,7 +31,9 @@
 
 #include <boost/regex.hpp> 
 
-// #include "lela/util/commentator.h"
+#ifdef HAVE_LELA
+# include "lela/util/commentator.h"
+#endif
 
 #include <iostream>
 #include <fstream>
@@ -39,11 +41,14 @@
 
 using namespace boost;
 using namespace std;
-// using namespace LELA;
+
+#ifdef HAVE_LELA
+using namespace LELA;
+#endif
 
 int main(int argc, char* argv[])
 {
-/*   
+#ifdef HAVE_LELA
   commentator.setBriefReportParameters (Commentator::OUTPUT_CONSOLE, false, false, false);
   
   commentator.getMessageClass (INTERNAL_DESCRIPTION).setMaxDepth (4);
@@ -51,7 +56,7 @@ int main(int argc, char* argv[])
   commentator.getMessageClass (TIMING_MEASURE).setMaxDepth (3);
   commentator.getMessageClass (TIMING_MEASURE).setMaxDetailLevel (Commentator::LEVEL_NORMAL);
   commentator.getMessageClass (PROGRESS_REPORT).setMaxDepth (3);
-*/
+#endif
    
 	// Input stuff, example below ...
 	
