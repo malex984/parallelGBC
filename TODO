@@ -1,0 +1,12 @@
+1. C++0x vs BOOST:
+
+If you compile with -std=c++0x, then __GXX_EXPERIMENTAL_CXX0X__ will be defined.
+
+include <boost/unordered_set.hpp> instead of <unordered_set>
+
+include/TMonoid.H:#include <unordered_set>
+include/Term.H:#include <unordered_set>
+
+
+
+
