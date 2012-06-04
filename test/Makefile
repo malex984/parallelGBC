@@ -16,7 +16,7 @@ include	../Makefile.rules
 
 OBJ=test-f4.bin lex-f4.bin
 
-all: $(OBJ)
+all: $(OBJ) run 
 
-run:
-	for i in $(OBJ); do ./$$i; done;
+run: $(OBJ)
+	for i in $(OBJ); do ./$$i ../input/cyclic3.txt; done;

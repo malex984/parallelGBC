@@ -16,6 +16,7 @@
 */
 #include "../include/F4Algorithm.H"
 
+/*
 #include "lela/util/commentator.h"
 #include "lela/blas/context.h"
 // #include "lela/ring/gf2.h"
@@ -24,14 +25,15 @@
 #include "lela/blas/level3.h"
 #include "lela/solutions/echelon-form.h"
 #include "lela/solutions/echelon-form-gf2.h"
+*/
 
 
 #include <stdio.h>
 #define BREAKPOINT {while(getchar() != '\n');}
 
 
+/*
 typedef LELA::Modular<coeffType> LELARing;
-
 typedef LELA::DenseMatrix<typename LELARing::Element> LelaDenseMatrix;
 typedef LELA::SparseMatrix<typename LELARing::Element> LelaSparseMatrix;
 
@@ -85,58 +87,65 @@ void my_row_echelon_form (const Ring &R, LELAMatrix& A,
 
 
 // LELARing R(field->getChar());
+*/
 
 
-//typedef std::vector<coeffType> CRow;
 
-class Matrix: private LelaDenseMatrix  // vector<CRow> // LelaDenseMatrix // TODO: LelaSparseMatrix :(((
+typedef std::vector<coeffType> CRow;
+typedef vector<CRow> BaseMatrix; 
+
+// typedef LelaDenseMatrix BaseMatrix; 
+// vector<CRow> // LelaDenseMatrix // TODO: LelaSparseMatrix :(((
+
+
+class Matrix: private BaseMatrix  
 {
   private:
 //    typedef LelaSparseMatrix Base;    
-    typedef LelaDenseMatrix Base; 
+    typedef BaseMatrix Base; 
 //    typedef vector<CRow> Base;
 
   public:
 //    typedef CRow Row;
     
-    Matrix(): Base()
+    Matrix(): Base ()
     {
     }
-
+/*
     Matrix(const int r, const int c): Base(r, c)
     {      
     }
-    
+*/    
     // TODO: what about destructor???
 
     coeffType getEntry(const int i, const int j) const
     {
-      return (*this)[i][j];
+      return (*(Base*)this)[i][j];
     }
 
     void setEntry(const int i, const int j, const coeffType& v)
     {
-      (*this)[i][j] = v;
+      (*(Base*)this)[i][j] = v;
 //      typename LelaDenseMatrix::Element x;        
 //      M->setEntry(i, k, R.init(x, rightSide[i][j].first));
     }
 
     std::size_t size() const
     {
-      return rowdim();
-//      return this->size();
+//      return rowdim();
+      return ((Base*)this)->size();
     }
 
     std::size_t size(std::size_t row) const
     {
-      return coldim();
-//      return (*this)[row].size();
+//      return coldim();
+      return (*(Base*)this)[row].size();
     }
 
     static Matrix* allocate(const int r, const int c, const coeffType& defv = 0)
     {
-//    Matrix* p = new Matrix(); p->assign(r, CRow(c, defv) ); return p;
-      return new Matrix(r, c);      
+      Matrix* p = new Matrix(); p->assign(r, CRow(c, defv) ); return p;
+//      return new Matrix(r, c);      
     }
 
 //     CRow& getRow(const int row)
@@ -210,7 +219,7 @@ class Matrix: private LelaDenseMatrix  // vector<CRow> // LelaDenseMatrix // TOD
         }
       }
     }
-};
+}; // class Matrix
 
 /*
 EchelonForm<Ring>::METHOD_STANDARD_GJ;
@@ -360,14 +369,12 @@ void F4::gauss(Matrix* pmatrix, size_t upper, vector<bool>& empty)
 
 void F4::pReduce(vector<vector<F4Operation> >& ops, Matrix* prs)
 {
-  Matrix& rs = *prs;
-
   for(size_t i = 0; i < ops.size(); i++)
   {
 //		#pragma omp parallel for num_threads( threads ) 
-		for(size_t j = 0; j < ops[i].size(); j++)
-      rs.pReduce( ops[i][j].target, ops[i][j].oper, ops[i][j].factor, field);
-	}
+     for(size_t j = 0; j < ops[i].size(); j++)
+       prs->pReduce( ops[i][j].target, ops[i][j].oper, ops[i][j].factor, field);
+  }
 }
 
 size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4Operation> >& ops, set<const Term*, TermComparator>& terms, Matrix **prs)
@@ -459,7 +466,7 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 	size_t pad = __COEFF_FIELD_INTVECSIZE;
 
   *prs = Matrix::allocate(rightSide.size(), (( terms.size()+pad-1 )/ pad ) * pad, 0); 
-  Matrix& rs = **prs; 
+//  Matrix& rs = **prs; 
 
 	for(size_t i = 0; i < rightSide.size(); i++) {
 		size_t j = 0;
@@ -468,7 +475,7 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 		{
       if(rightSide[i][j].second == *it)
       {
-        rs.setEntry(i, k, rightSide[i][j].first);        
+        (*prs)->setEntry(i, k, rightSide[i][j].first);        
 				j++;
 			}
 		}
@@ -481,7 +488,7 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 	ops.push_back( vector<F4Operation >() );
 
 	#if 1 
-	vector<size_t> l(rs.size(),0);
+	vector<size_t> l((*prs)->size(),0);
 	for(map<const Term*, vector<pair<size_t, coeffType> >, TermComparator>::reverse_iterator it = pivotOpsOrdered.rbegin(); it != pivotOpsOrdered.rend(); it++)
 	{
 		size_t o = pivots[it->first];

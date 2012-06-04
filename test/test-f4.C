@@ -31,7 +31,7 @@
 
 #include <boost/regex.hpp> 
 
-#include "lela/util/commentator.h"
+// #include "lela/util/commentator.h"
 
 #include <iostream>
 #include <fstream>
@@ -39,10 +39,11 @@
 
 using namespace boost;
 using namespace std;
-using namespace LELA;
+// using namespace LELA;
 
 int main(int argc, char* argv[])
 {
+/*   
   commentator.setBriefReportParameters (Commentator::OUTPUT_CONSOLE, false, false, false);
   
   commentator.getMessageClass (INTERNAL_DESCRIPTION).setMaxDepth (4);
@@ -50,7 +51,8 @@ int main(int argc, char* argv[])
   commentator.getMessageClass (TIMING_MEASURE).setMaxDepth (3);
   commentator.getMessageClass (TIMING_MEASURE).setMaxDetailLevel (Commentator::LEVEL_NORMAL);
   commentator.getMessageClass (PROGRESS_REPORT).setMaxDepth (3);
-  
+*/
+   
 	// Input stuff, example below ...
 	
 	// Is there a file provided?
@@ -96,8 +98,8 @@ int main(int argc, char* argv[])
 	TOrdering* o = new DegRevLexOrdering(max);
 	// 2. Create a power product monoid for the terms. Pay attention that ordering and monoid match.
 	TMonoid m(max);
-  // 3. Create a coefficient field.
-  CoeffField* cf = new CoeffField(32003);
+   // 3. Create a coefficient field.
+   CoeffField* cf = new CoeffField(32003);
 	// 4. Read in the polynomials from string 't'. The second parameter is the power product monoid.
 	vector<Polynomial> list = Polynomial::createList(t, m);
 	// 5. Before you can compute the groebner basis, you have to order your polynomials by term
@@ -109,13 +111,19 @@ int main(int argc, char* argv[])
 //	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::normalize), _1, cf));
 	// Create the f4 computer.
 	F4 f4;
-	// Compute the groebner basis for the polynomials in 'list' with 'threads' threads/processors 
-	vector<Polynomial> result = f4(list, o, cf, threads);
-	// Return the size of the groebner basis
-	cout << "Size of GB:\t" << result.size() << "\n";
-	// Clean up your memory
-	delete o;
-	delete cf;
+   
+   // Compute the groebner basis for the polynomials in 'list' with 'threads' threads/processors 
+   vector<Polynomial> result = f4(list, o, cf, threads);
+   
+   // Return the size of the groebner basis
+   cout << "Size of GB:\t" << result.size() << "\n";
+
+   for( int k = 0; k < result.size(); k++ )
+     cout << "Result GB[" << k << "]:\t" << result[k] << "\n";
+   
+   // Clean up your memory
+   delete o;
+   delete cf;
 }
 
 
