@@ -15,6 +15,10 @@
  *  along with parallelGBC.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../include/F4Algorithm.H"
+// #include "../include/Matrix.H"
+
+#include <stdio.h>
+#define BREAKPOINT {while(getchar() != '\n');}
 
 #ifdef HAVE_LELA
 
@@ -31,10 +35,6 @@
 
 
 
-#include <stdio.h>
-#define BREAKPOINT {while(getchar() != '\n');}
-
-
 #ifdef HAVE_LELA
 
 typedef LELA::Modular<coeffType> LELARing;
@@ -43,6 +43,15 @@ typedef LELA::SparseMatrix<typename LELARing::Element> LelaSparseMatrix;
 
 
 using namespace LELA;
+
+/*
+EchelonForm<Ring>::METHOD_STANDARD_GJ;
+EchelonForm<Ring>::METHOD_ASYMPTOTICALLY_FAST_GJ;
+EchelonForm<Ring>::METHOD_FAUGERE_LACHARTRE;
+EchelonForm<Ring>::METHOD_UNKNOWN;
+
+EchelonForm<GF2>::METHOD_M4RI
+*/
 
 template <class Ring, class LELAMatrix>
 void my_row_echelon_form (const Ring &R, LELAMatrix& A,
@@ -89,80 +98,94 @@ void my_row_echelon_form (const Ring &R, LELAMatrix& A,
   commentator.stop (MSG_DONE);
 }
 
-
-// LELARing R(field->getChar());
 #endif
 
 
 
-typedef std::vector<coeffType> CRow;
-typedef vector<CRow> BaseMatrix; 
 
 
 #ifdef HAVE_LELA
-// typedef LelaDenseMatrix BaseMatrix; 
-// typedef LelaSparseMatrix BaseMatrix; 
+typedef LelaDenseMatrix BaseMatrix; 
+// typedef LelaSparseMatrix BaseMatrix;
+#else
+typedef std::vector<coeffType> CRow;
+typedef vector<CRow> BaseMatrix; 
 #endif
 
 
 class Matrix: private BaseMatrix  
 {
   private:
-//    typedef LelaSparseMatrix Base;    
     typedef BaseMatrix Base; 
-//    typedef vector<CRow> Base;
+#ifndef HAVE_LELA
+    typedef coeffType Element;
+#else
+    typedef typename Base::Element Element;
+#endif
 
   public:
-//    typedef CRow Row;
-    
     Matrix(): Base ()
     {
     }
-/*
+
 #ifdef HAVE_LELA
     Matrix(const int r, const int c): Base(r, c)
     {      
     }
 #endif
-*/    
-    // TODO: what about destructor???
 
-    coeffType getEntry(const int i, const int j) const
+   // TODO: what about destructor???
+
+    Element getEntry(const int i, const int j) const
     {
+#ifndef HAVE_LELA
       return (*(Base*)this)[i][j];
+#else
+      Element x = 0;
+      return ((Base*)this)->getEntry (x, i, j);
+#endif
     }
 
-    void setEntry(const int i, const int j, const coeffType& v)
+    void setEntry(const int i, const int j, const Element& v)
     {
+#ifndef HAVE_LELA
       (*(Base*)this)[i][j] = v;
-//      typename LelaDenseMatrix::Element x;        
-//      M->setEntry(i, k, R.init(x, rightSide[i][j].first));
+#else
+//      typename LelaDenseMatrix::Element x; R.init(x, v);
+      cerr << "setEntry[" << i << ", " << j << ", [" << v << "]) => ";
+      ((Base*)this)->setEntry(i, j, v);
+      cerr << getEntry(i, j) << endl;
+#endif
     }
 
     std::size_t size() const
     {
-//      return rowdim();
+#ifndef HAVE_LELA
       return ((Base*)this)->size();
+#else
+      return rowdim();
+#endif
     }
 
     std::size_t size(std::size_t row) const
     {
-//      return coldim();
+#ifndef HAVE_LELA
       return (*(Base*)this)[row].size();
+#else
+      return coldim();
+#endif
     }
 
     static Matrix* allocate(const int r, const int c, const coeffType& defv = 0)
     {
+#ifndef HAVE_LELA
       Matrix* p = new Matrix(); p->assign(r, CRow(c, defv) ); return p;
-//      return new Matrix(r, c);      
+#else
+      return new Matrix(r, c);      
+#endif
     }
 
-//     CRow& getRow(const int row)
-//     {
-//       return (*this)[row];
-//     }
-
-    /// elementary op. on rows: [target] -= [oper] * (1/ factor)???
+    /// elementary op. on rows: [target] -= [oper] * (factor)
     void pReduce(const std::size_t target, const std::size_t oper, const coeffType factor, const CoeffField* const field)
     {
 //      cerr << "pReduce(target: " << target << ", oper: " << oper << ", factor: " << factor << endl;
@@ -175,34 +198,36 @@ class Matrix: private BaseMatrix
       
       for(std::size_t k = 0; k < this->size(oper); k++)
       {
-//        cerr << "k: " << k << endl;
+//        cerr << "[" << k  << "]: " ;
 	 
         const coeffType ok = this->getEntry(oper, k);
-//        cerr << "ok: " << ok << endl;
+//        cerr << "ok: " << ok;
 	 
         if(ok != 0)
         {
 //          const coeffType b = field->getExp(field->getLog(ok) + c);
 
 	  const coeffType tk = this->getEntry(target, k);
-/*	   
-          cerr << "b: " << b << endl;
-          cerr << "tk: " << tk << endl;
-*/
+//          cerr << ", tk: " << tk;
+//          cerr << "b: " << b << endl;
 //          this->setEntry(target, k, (b > tk) ? tk - b + modn : tk - b);
 	   
 //          cerr << "tk': " << this->getEntry(target, k) << endl;
 //          cerr << "tk'': " << field->mulSub(tk, ok, c) << endl;
           this->setEntry(target, k, field->mulSub(tk, ok, c));
-	   
+
+//          cerr << "tk': " << this->getEntry(target, k) << ", must be: " << field->mulSub(tk, ok, c);
         }
+	 
+        cerr << endl;
       }
     }
 
     /// empty: flags indicating zero rows
     void gauss(std::size_t upper, std::vector<bool>& empty, const CoeffField* const field)
     {
-//      LELA::my_row_echelon_form(R, *M, LELA::EchelonForm<LELARing>::METHOD_UNKNOWN, true);
+//      LELARing R(field->getChar());
+//      LELA::my_row_echelon_form(R, *this, LELA::EchelonForm<LELARing>::METHOD_UNKNOWN, true);
       
       for(std::size_t i = 1; i < upper; i+=2)
       {
@@ -266,16 +291,6 @@ ostream& operator<< (ostream& out, const Matrix &M)
    out << "]";
    return out;
 }
-
-/*
-EchelonForm<Ring>::METHOD_STANDARD_GJ;
-EchelonForm<Ring>::METHOD_ASYMPTOTICALLY_FAST_GJ;
-EchelonForm<Ring>::METHOD_FAUGERE_LACHARTRE;
-EchelonForm<Ring>::METHOD_UNKNOWN;
-
-EchelonForm<GF2>::METHOD_M4RI
-*/
-
 
 
 void F4::updatePairs(F4PairSet& pairs, vector<Polynomial>& polys, bool initial) 
@@ -589,12 +604,12 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
   //vector<vector<size_t> > setOffset; 
   size_t upper = prepare(pairs, polys, ops, terms, &rs);
    
-//  cerr << "prepared matrix: " << *rs << endl;
+  cerr << "prepared matrix: " << *rs << endl;
 
   // ELIMINATE
   pReduce(ops, rs);
 
-//  cerr << "pReduced matrix: " << *rs << endl;
+  cerr << "pReduced matrix: " << *rs << endl;
    
   ops.clear();
   
@@ -602,7 +617,7 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 	
   gauss(rs, upper, empty);
    
-//  cerr << "Gaussed matrix: " << *rs << endl;  
+  cerr << "Gaussed matrix: " << *rs << endl;  
    
   //cout << "GAUSSR:\t" << seconds()-timer << "\n";
   // ELIMINATE END
@@ -625,7 +640,8 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
     }
   }
 	
-//  cerr << "Resulting polynomials: " << polys.size() << " new elements: \n" << polys << endl;
+  cerr << "Resulting polynomials: " << polys.size() << " new elements: \n" << polys << endl;
+   
   //postReduce(polys);
 
   delete rs;
