@@ -156,18 +156,36 @@ class Matrix: private BaseMatrix
     /// elementary op. on rows: [target] -= [oper] * (1/ factor)???
     void pReduce(const std::size_t target, const std::size_t oper, const coeffType factor, const CoeffField* const field)
     {
-      const coeffType modn = field->getChar();
+//      cerr << "pReduce(target: " << target << ", oper: " << oper << ", factor: " << factor << endl;
+       
+//      const coeffType modn = field->getChar();
       const coeffType c = field->getLog( factor );
 
-      for(std::size_t k = 0; k < size(oper); k++)
+//      cerr << "c: " << c << endl;
+//      cerr << "modn: " << modn << endl;
+      
+      for(std::size_t k = 0; k < this->size(oper); k++)
       {
-        const coeffType ok = getEntry(oper, k);
+//        cerr << "k: " << k << endl;
+	 
+        const coeffType ok = this->getEntry(oper, k);
+//        cerr << "ok: " << ok << endl;
+	 
         if(ok != 0)
         {
-          const coeffType b = field->getExp(field->getLog(ok) + c);
-          const coeffType tk = getEntry(target, k);
+//          const coeffType b = field->getExp(field->getLog(ok) + c);
 
-          setEntry(target, k, (b > tk) ? tk - b + modn : tk - b);	
+	  const coeffType tk = this->getEntry(target, k);
+/*	   
+          cerr << "b: " << b << endl;
+          cerr << "tk: " << tk << endl;
+*/
+//          this->setEntry(target, k, (b > tk) ? tk - b + modn : tk - b);
+	   
+//          cerr << "tk': " << this->getEntry(target, k) << endl;
+//          cerr << "tk'': " << field->mulSub(tk, ok, c) << endl;
+          this->setEntry(target, k, field->mulSub(tk, ok, c));
+	   
         }
       }
     }
@@ -220,6 +238,25 @@ class Matrix: private BaseMatrix
       }
     }
 }; // class Matrix
+
+
+ostream& operator<< (ostream& out, const Matrix &M)
+{
+   out << "[" << endl;
+   
+   for(size_t i = 0; i < M.size(); i++)
+   {
+      out << "\t/" << i << "/:\t"<< M.getEntry(i, 0);
+      
+      for(size_t j = 1; j < M.size(i); j++)
+	out << ",\t"<< M.getEntry(i, j);
+      
+      out << endl;
+   }
+   
+   out << "]";
+   return out;
+}
 
 /*
 EchelonForm<Ring>::METHOD_STANDARD_GJ;
@@ -463,32 +500,34 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 
 	//rs.assign(rightSide.size(), vector<coeffType>(terms.size(), 0) );
 
-	size_t pad = __COEFF_FIELD_INTVECSIZE;
+   size_t pad = __COEFF_FIELD_INTVECSIZE;
+   
+   const size_t nrows = rightSide.size();
 
-  *prs = Matrix::allocate(rightSide.size(), (( terms.size()+pad-1 )/ pad ) * pad, 0); 
-//  Matrix& rs = **prs; 
+   *prs = Matrix::allocate(nrows, (( terms.size()+pad-1 )/ pad ) * pad, 0); 
 
-	for(size_t i = 0; i < rightSide.size(); i++) {
-		size_t j = 0;
-		size_t k = 0;
-		for(set<const Term*, TermComparator>::iterator it = terms.begin(); j < rightSide[i].size() /*&& it != terms.end()*/; it++, k++)
-		{
-      if(rightSide[i][j].second == *it)
+   for(size_t i = 0; i < nrows; i++) 
+   {
+      size_t j = 0;
+      size_t k = 0;
+      for(set<const Term*, TermComparator>::iterator it = terms.begin(); j < rightSide[i].size() /*&& it != terms.end()*/; it++, k++)
       {
-        (*prs)->setEntry(i, k, rightSide[i][j].first);        
-				j++;
-			}
-		}
-  }
+	 if(rightSide[i][j].second == *it)
+	 {
+	    (*prs)->setEntry(i, k, rightSide[i][j].first);        
+	    j++;
+	 }
+      }
+   }
 
-	rightSide.clear();
+   rightSide.clear();
 	
 	map<const Term*, vector<pair<size_t, coeffType> >, TermComparator> pivotOpsOrdered(pivotOps.begin(), pivotOps.end(), tog);
 	pivotOps.clear();
 	ops.push_back( vector<F4Operation >() );
 
 	#if 1 
-	vector<size_t> l((*prs)->size(),0);
+	vector<size_t> l(nrows, 0);
 	for(map<const Term*, vector<pair<size_t, coeffType> >, TermComparator>::reverse_iterator it = pivotOpsOrdered.rbegin(); it != pivotOpsOrdered.rend(); it++)
 	{
 		size_t o = pivots[it->first];
@@ -537,38 +576,47 @@ void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 	vector<vector<F4Operation> > ops;
 
   Matrix* rs;
-	//vector<vector<size_t> > setOffset; 
-	size_t upper = prepare(pairs, polys, ops, terms, &rs);
+  
+  //vector<vector<size_t> > setOffset; 
+  size_t upper = prepare(pairs, polys, ops, terms, &rs);
+   
+//  cerr << "prepared matrix: " << *rs << endl;
 
-	// ELIMINATE
+  // ELIMINATE
   pReduce(ops, rs);
 
+//  cerr << "pReduced matrix: " << *rs << endl;
+   
   ops.clear();
   
-	vector<bool> empty(upper, false); // too large, FIX?
+  vector<bool> empty(upper, false); // too large, FIX?
 	
-	gauss(rs, upper, empty);
-	//cout << "GAUSSR:\t" << seconds()-timer << "\n";
-	// ELIMINATE END
-	for(size_t i = 1; i < upper; i+=2)
-	{
-		if(!empty[i])
-		{
-			Polynomial p(currentDegree);
-			size_t j = 0;
-			for(set<const Term*, TermComparator>::iterator it = terms.begin(); it != terms.end(); it++) 
+  gauss(rs, upper, empty);
+   
+//  cerr << "Gaussed matrix: " << *rs << endl;  
+   
+  //cout << "GAUSSR:\t" << seconds()-timer << "\n";
+  // ELIMINATE END
+  for(size_t i = 1; i < upper; i+=2)
+  {
+    if(!empty[i])
+    {
+      Polynomial p(currentDegree);
+      size_t j = 0;
+      for(set<const Term*, TermComparator>::iterator it = terms.begin(); it != terms.end(); it++) 
       {
         const coeffType v = rs->getEntry(i, j);
         
-				if(v != 0)
-          p.push_back(make_pair(v, *it));
+	if(v != 0)
+           p.push_back(make_pair(v, *it));
         
-				j++;
-			}
-			polys.push_back( p );
-		}
-	}
-	//cout << polys.size() << " new elements\n";
+	j++;
+      }
+      polys.push_back( p );
+    }
+  }
+	
+//  cerr << "Resulting polynomials: " << polys.size() << " new elements: \n" << polys << endl;
   //postReduce(polys);
 
   delete rs;

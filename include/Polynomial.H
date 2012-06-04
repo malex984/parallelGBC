@@ -129,6 +129,7 @@ class Polynomial {
 };
 
 ostream& operator<< (ostream &out, const Polynomial &poly);
+ostream& operator<< (ostream& out, const vector<Polynomial> &polys);
 
 class MonomialComparator {
 	public:

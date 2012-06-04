@@ -116,11 +116,8 @@ int main(int argc, char* argv[])
    vector<Polynomial> result = f4(list, o, cf, threads);
    
    // Return the size of the groebner basis
-   cout << "Size of GB:\t" << result.size() << "\n";
+   cout << "Size of GB:\t" << result.size() << "\nResult GB: " << result << endl;
 
-   for( int k = 0; k < result.size(); k++ )
-     cout << "Result GB[" << k << "]:\t" << result[k] << "\n";
-   
    // Clean up your memory
    delete o;
    delete cf;
