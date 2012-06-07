@@ -18,7 +18,7 @@ void PolynomialSequence::push_back(const Polynomial& poly)
 }
 
 // utility function to pick the coefficient from a "Monomial"
-int firstElement(Monomial &p) {
+int firstElement(const Monomial& p) {
 	return p.first;
 }
 void PolynomialSequence::push_back(const Term* t, const Polynomial& poly,
@@ -74,7 +74,9 @@ void PolynomialSequence::reduce(vector<Polynomial>& polys) const
 	assert(terms.size() > 0);
 	size_t nrows = seq.size();
 	Matrix pmatrix(nrows, terms.size());
+   
 	initialize_matrix(pmatrix);
+	cerr << "matrix: " << pmatrix << endl;
 	// arrange eliminations in pivot columns to be parallel friendly
 	vector<vector<F4Operation> > ops;
 	order_pivot_ops(ops);
@@ -83,14 +85,14 @@ void PolynomialSequence::reduce(vector<Polynomial>& polys) const
 	// apply pivot_ops to the matrix
 	pReduce(pmatrix, ops);
 
-	//cerr << "pReduced matrix: " << *rs << endl;
+	cerr << "pReduced matrix: " << pmatrix << endl;
 
 	// this will be used to mark zero rows in the row reduced form
 	vector<bool> empty_rows(2*n_spolys, false); // too large, FIX?
 
 	gauss(pmatrix, empty_rows);
 
-	//cerr << "Gaussed matrix: " << *rs << endl;  
+	cerr << "Gaussed matrix: " << pmatrix << endl;
 
 	get_new_polys(polys, pmatrix, empty_rows);
 }
@@ -124,25 +126,42 @@ void PolynomialSequence::initialize_matrix (Matrix& pmatrix) const
 {
 	//   size_t pad = __COEFF_FIELD_INTVECSIZE;
 
+//         cerr << "terms: " << terms << endl;
+
 
 	//Matrix prs = Matrix::allocate(nrows, (( terms.size()+pad-1 )/ pad ) * pad, 0); 
 	seq_coeffs_type::const_iterator cur_coeffs = seq_coeffs.begin();
+   
 	size_t i = 0;
+   
 	for(seq_terms_type::const_iterator cur_terms = seq_terms.begin();
 			cur_coeffs != seq_coeffs.end();
 			cur_coeffs++, cur_terms++, i++)
 	{
-		terms_type::const_iterator cur_term = (*cur_terms).begin();
-		coeffs_type::const_iterator cur_coeff = (*cur_coeffs).begin();
-		size_t j = 0;
-		for(terms_type::const_iterator it = terms.begin();
-				cur_coeff != (*cur_coeffs).end() ; it++, j++)
-		{
+	   
+	   terms_type::const_iterator cur_term = (*cur_terms).begin();
+	   
+	   for(coeffs_type::const_iterator cur_coeff = (*cur_coeffs).begin(); 
+	       (cur_coeff != (*cur_coeffs).end()) && (cur_term != (*cur_terms).end()); 
+	       cur_coeff++, cur_term++  )
+	     {
+		cerr << "cur_term: " << **cur_term << endl ; 
+		cerr << "cur_coeff: " << *cur_coeff << endl;
+		
+		   size_t j = 0;		
+		   for(terms_type::const_iterator it = terms.begin(); (it != terms.end())  ; it++, j++)
+		     {		
+			cerr << "j: " << j << ", term: " << **it << endl;
 			if(*cur_term == *it)
 			{
-				pmatrix.setEntry(i, j, *cur_coeff);
-			}
-		}
+			   pmatrix.setEntry(i, j, *cur_coeff);
+			   break;			
+			}	
+		     }
+		   
+	     }
+	   
+		   
 	}
 }
 

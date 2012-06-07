@@ -1,6 +1,12 @@
 #ifndef F4MATRIX_H
 #define F4MATRIX_H
 
+#include <set>
+#include <vector>
+#include <map>
+
+#include "../include/CoeffField.H"
+
 
 #ifdef HAVE_LELA
 
@@ -113,9 +119,10 @@ class Matrix: private BaseMatrix
 #ifdef HAVE_LELA
     Matrix(const int r, const int c): Base(r, c)
 #else
-    Matrix(const int r, const int c): Base(r, CRow(c))
+    Matrix(const int r, const int c) // : Base(r, CRow(c))
 #endif
-    {      
+    {
+      assign(r, CRow(c, 0));
     }
 
    // TODO: what about destructor???
@@ -257,24 +264,6 @@ class Matrix: private BaseMatrix
     }
 }; // class Matrix
 
-
-ostream& operator<< (ostream& out, const Matrix &M)
-{
-   out << "[" << endl;
-   
-   for(size_t i = 0; i < M.size(); i++)
-   {
-      out << "\t/" << i << "/:\t"<< M.getEntry(i, 0);
-      
-      for(size_t j = 1; j < M.size(i); j++)
-	out << ",\t"<< M.getEntry(i, j);
-      
-      out << endl;
-   }
-   
-   out << "]";
-   return out;
-}
-
+ostream& operator<< (ostream& out, const Matrix &M);
 
 #endif // F4MATRIX_H
