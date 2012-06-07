@@ -25,6 +25,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/bind.hpp>
 #include "../include/F4Utils.H"
+#include "../include/DivList.H"
 
 #ifdef F4_THREADS
 	#define __F4_ALGORITHM_THREADS F4_THREADS
@@ -91,6 +92,10 @@ class F4 {
 		const TOrdering* O;
 		degreeType currentDegree;
 		int threads;
+		MyKDTree div_tree;
+
+		F4(int num_vars) : div_tree(num_vars) {}
+		~F4() {}
 
 		// statistics
 		double reductionTime;

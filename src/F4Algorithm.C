@@ -95,6 +95,7 @@ void F4::updatePairs(F4PairSet& pairs, vector<Polynomial>& polys, bool initial)
 				}  
 			}
 
+			/*
 			for(size_t j = 0; j < groebnerBasis.size(); j++)
 			{   
 				if(inGroebnerBasis[j] && groebnerBasis[j].LT()->isDivisibleBy(h.LT()))
@@ -102,7 +103,16 @@ void F4::updatePairs(F4PairSet& pairs, vector<Polynomial>& polys, bool initial)
 					inGroebnerBasis[j] = false;
 				}
 			}
+			*/
 		groebnerBasis.push_back( h );
+		std::vector<MyKDTree::Entry> removed_indices;
+		div_tree.removeMultiples(h.LT(), removed_indices);
+		for(std::vector<MyKDTree::Entry>::const_iterator itr =
+						removed_indices.begin();
+						itr != removed_indices.end(); itr++) {
+				inGroebnerBasis[itr->second] = false;
+		}
+		div_tree.insert(make_pair(h.LT(), groebnerBasis.size()-1));
 		inGroebnerBasis.push_back( insertIntoG );
 		t++;
 		}
@@ -226,14 +236,26 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 				found = pivots.count(t) > 0;
 				if(!found)
 				{
-					for(size_t k = 0; !found && k < groebnerBasis.size(); k++) 
+						MyKDTree::Entry* divisor = div_tree.findDivisor(t);
+						if (divisor != NULL) {
+								found = true;
+						//		std::cerr<<"tree_found: "<<divisor->second<<std::endl;
+							rows.push_back(make_pair(divisor->second, t));
+							pivots.insert(make_pair(t, rows.size()-1));
+						}
+						/*
+					for(size_t k = 0; k < groebnerBasis.size(); k++)
 					{
 						if(inGroebnerBasis[k] && t->isDivisibleBy(groebnerBasis[k].LT())) {
+								std::cerr<<"found: "<<k<<std::endl;
 							found = true;
 							rows.push_back(make_pair(k, t));
 							pivots.insert(make_pair(t, rows.size()-1));
+							break;
 						}
 					}
+					assert (tree_found == found);
+					*/
 				}
 			}
 

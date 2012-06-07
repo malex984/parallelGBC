@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
 	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::order), _1, o));
 	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::bringIn), _1, cf, false));
 	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::normalize), _1, cf));
-	F4 f4;
+	F4 f4(max);
 	
 	vector<Polynomial> result = f4(list, o, cf, threads);
 	cout << result.size() << "\n";

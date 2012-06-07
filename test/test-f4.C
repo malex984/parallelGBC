@@ -115,13 +115,14 @@ int main(int argc, char* argv[])
 	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::bringIn), _1, cf, false));
 //	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::normalize), _1, cf));
 	// Create the f4 computer.
-	F4 f4;
+	F4 f4(max);
    
    // Compute the groebner basis for the polynomials in 'list' with 'threads' threads/processors 
    vector<Polynomial> result = f4(list, o, cf, threads);
    
    // Return the size of the groebner basis
-   cout << "Size of GB:\t" << result.size() << "\nResult GB: " << result << endl;
+   cout << "Size of GB:\t" << result.size()<<std::endl;
+   //cout<< "\nResult GB: " << result << endl;
 
    // Clean up your memory
    delete o;

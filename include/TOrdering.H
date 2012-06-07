@@ -25,7 +25,7 @@ class Term;
 
 class TOrdering {
   public:
-    const degreeType N;
+    const size_t N;
     TOrdering(degreeType n) : N(n) {}
     virtual int cmp(const Term* a, const Term* b) const = 0;
     virtual string name() const = 0;

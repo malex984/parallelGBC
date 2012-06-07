@@ -15,7 +15,9 @@
 
 #endif
 
+#include "../include/CoeffField.H"
 
+#include <vector>
 
 #ifdef HAVE_LELA
 
@@ -87,11 +89,11 @@ void _row_echelon_form (const Ring &R, LELAMatrix& A,
 
 
 #ifdef HAVE_LELA
-typedef LelaDenseMatrix BaseMatrix; 
+typedef LelaDenseMatrix BaseMatrix;
 // typedef LelaSparseMatrix BaseMatrix; // NOTE: this would NOT work with the current LA (pReduce/gauss) implementations :/
 #else
 typedef std::vector<coeffType> CRow;
-typedef vector<CRow> BaseMatrix; 
+typedef std::vector<CRow> BaseMatrix; 
 #endif
 
 

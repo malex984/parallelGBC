@@ -21,7 +21,7 @@
 CXX = /usr/bin/g++
 
 # !!!!!!!!!!!!!!!!!!!!!!! TO BE CHANGED IN LELA is needed!!!!!!!!!!!!!!!!!!!!!!!
-LELA_CFLAGS= 
+LELA_CFLAGS=-I../../mathic20120607/include -I../../memtailor-20120607/include
 #-I/GITHUB/w/LELA/include -D'HAVE_LELA=1'
 LELA_LIBS= 
 #-L/GITHUB/w/LELA/lib /GITHUB/w/LELA/lib/liblela.a -lgmp -lgmpxx -lpng -lm4ri  -lcblas
