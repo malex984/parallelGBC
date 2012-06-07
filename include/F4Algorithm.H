@@ -17,15 +17,16 @@
 #ifndef F4_ALGORITHM_H
 #define F4_ALGORITHM_H
 
-#include <set>
-#include <vector>
-#include <map>
 #include "../include/Term.H"
 #include "../include/Polynomial.H"
 #include "../include/PolynomialSequence.H"
+#include "../include/F4Utils.H"
+
+#include <set>
+#include <vector>
+#include <map>
 #include <boost/unordered_map.hpp>
 #include <boost/bind.hpp>
-#include "../include/F4Utils.H"
 
 #ifdef F4_THREADS
 	#define __F4_ALGORITHM_THREADS F4_THREADS

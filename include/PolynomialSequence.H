@@ -50,8 +50,9 @@ public:
 		sugar_degree(deg), monoid(monoid), term_comparator(tog),
 		field(field),
 		seq(), seq_terms(), seq_coeffs(),terms(), pivots(),
-		pivot_ops(), n_spolys(0) {};
-	~PolynomialSequence();
+		pivot_ops(), n_spolys(0) {}
+
+	~PolynomialSequence() {}
 
 	void push_spoly(const Term* lcm, const Polynomial& left,
 			const Polynomial& right);

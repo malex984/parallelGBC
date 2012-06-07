@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
 	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::bringIn), _1, cf, false));
 //	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::normalize), _1, cf));
 	// Create the f4 computer.
-	F4 f4;
+   F4 f4(m);
    
    // Compute the groebner basis for the polynomials in 'list' with 'threads' threads/processors 
    vector<Polynomial> result = f4(list, o, cf, threads);
