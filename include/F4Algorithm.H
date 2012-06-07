@@ -22,6 +22,7 @@
 #include <map>
 #include "../include/Term.H"
 #include "../include/Polynomial.H"
+#include "../include/PolynomialSequence.H"
 #include <boost/unordered_map.hpp>
 #include <boost/bind.hpp>
 #include "../include/F4Utils.H"
@@ -57,28 +58,6 @@ class F4PairComparator {
 		}
 };
 
-class F4Pivot {
-	public:
-		const Term* column;
-		size_t row;
-		vector<pair<size_t, coeffType> > operations;
-
-		F4Pivot(const Term* column, size_t row) : column(column), row(row) {}
-
-		void addOperation(size_t row, coeffType factor) {
-			operations.push_back(make_pair(row, factor));
-		}
-};
-
-class F4Operation {
-	public:
-		size_t target;
-		size_t oper;
-		coeffType factor;
-
-		F4Operation(size_t target, size_t oper, coeffType factor) : target(target), oper(oper), factor(factor) {}
-};
-
 typedef set<F4Pair,F4PairComparator> F4PairSet;
 
 class Matrix;
@@ -86,11 +65,15 @@ class Matrix;
 class F4 {
 	public:
     CoeffField* field;
+    TMonoid& monoid;
 		vector<Polynomial> groebnerBasis;
 		vector<bool> inGroebnerBasis;
 		const TOrdering* O;
 		degreeType currentDegree;
 		int threads;
+
+		F4(TMonoid& monoid) : monoid(monoid) {}
+		
 
 		// statistics
 		double reductionTime;
@@ -99,9 +82,10 @@ class F4 {
 
     // select() is part of reduce
 		
-		void gauss(Matrix* pm, size_t upper, vector<bool>& empty);
-		void pReduce(vector<vector<F4Operation> >& ops, Matrix* prs);
-		size_t prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4Operation> >& ops, set<const Term*, TermComparator>& terms, Matrix **prs);
+		//void gauss(Matrix* pm, size_t upper, vector<bool>& empty);
+		//void pReduce(vector<vector<F4Operation> >& ops, Matrix* prs);
+		PolynomialSequence prepare(F4PairSet& pairs);
+		//size_t prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4Operation> >& ops, set<const Term*, TermComparator>& terms, Matrix **prs);
 		void reduce(F4PairSet& pairs, vector<Polynomial>& polys);
 		void postReduce(vector<Polynomial>& polys);
 		void updatePairs(F4PairSet& pairs, vector<Polynomial>& polys, bool initial = false);

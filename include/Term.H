@@ -137,7 +137,7 @@ class Term {
 
 		// Multiplies a set of terms with the current term
 		// Uses OpenMP-Parallelization
-		vector<const Term*> mulAll(Polynomial& in, int threads, double& timer) const;
+		vector<const Term*> mulAll(const Polynomial& in, int threads, double& timer) const;
 
 		friend class TMonoid;
 };

@@ -112,9 +112,11 @@ class Matrix: private BaseMatrix
 
 #ifdef HAVE_LELA
     Matrix(const int r, const int c): Base(r, c)
+#else
+    Matrix(const int r, const int c): Base(r, CRow(c))
+#endif
     {      
     }
-#endif
 
    // TODO: what about destructor???
 

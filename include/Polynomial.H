@@ -27,8 +27,9 @@ using namespace std;
 typedef pair<coeffType, const Term*> Monomial;
 
 class Polynomial {
+	typedef std::vector<Monomial> monomials_type;
 	private:
-		std::vector<Monomial> monomials;
+		monomials_type monomials;
 		degreeType sugarDegree;
 
 	public:
@@ -72,6 +73,13 @@ class Polynomial {
 
 		static Polynomial createInstance(const string& s, TMonoid& m, degreeType min = 1);
 		static vector<Polynomial> createList(const string& s, TMonoid& m, degreeType min = 1);
+
+		monomials_type::const_iterator begin() const {
+			return monomials.begin();
+		}
+		monomials_type::const_iterator end() const {
+			return monomials.end();
+		}
 
 		Monomial operator[](size_t i) const {
 			return monomials[i];

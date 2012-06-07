@@ -150,40 +150,31 @@ void printPolyMatrix(vector<Polynomial>& v, const TOrdering* O)
 	}
 }
 
-void F4::gauss(Matrix* pmatrix, size_t upper, vector<bool>& empty)
+PolynomialSequence F4::prepare(F4PairSet& pairs)
 {
-  pmatrix->gauss(upper, empty, field);
-}
-
-void F4::pReduce(vector<vector<F4Operation> >& ops, Matrix* prs)
-{
-  for(size_t i = 0; i < ops.size(); i++)
-  {
-//		#pragma omp parallel for num_threads( threads ) 
-     for(size_t j = 0; j < ops[i].size(); j++)
-       prs->pReduce( ops[i][j].target, ops[i][j].oper, ops[i][j].factor, field);
-  }
-}
-
-size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4Operation> >& ops, set<const Term*, TermComparator>& terms, Matrix **prs)
-{
-	double timer = seconds();
+	//double timer = seconds();
 	// SELECTION
 	TermComparator tog(O, true);
 	vector<F4Pair> tmp(pairs.begin(), pairs.end());
 	sort(tmp.begin(), tmp.end(), s());
 	currentDegree = tmp.begin()->sugar;
+
+	PolynomialSequence poly_seq(currentDegree, monoid, tog, field);
 	//std::cout << currentDegree << " degree\n";
-	vector<pair<size_t, const Term*> > rows;
 	size_t index;
 	// Create pivots
 	unordered_map<const Term*, size_t> pivots;
 
+	// selection
 	for(index = 0; index < tmp.size() && tmp[index].sugar == currentDegree; index++)
 	{
-		rows.push_back(make_pair(tmp[index].i, tmp[index].LCM));
-		rows.push_back(make_pair(tmp[index].j, tmp[index].LCM));
-		pivots.insert(make_pair(tmp[index].LCM, 2*index));
+		poly_seq.push_spoly(tmp[index].LCM,
+				groebnerBasis[tmp[index].i],
+				groebnerBasis[tmp[index].j]);
+
+		//rows.push_back(make_pair(tmp[index].i, tmp[index].LCM));
+		//rows.push_back(make_pair(tmp[index].j, tmp[index].LCM));
+		//pivots.insert(make_pair(tmp[index].LCM, 2*index));
 	}
 	pairs.clear();
 	pairs.insert(tmp.begin() + index, tmp.end());
@@ -193,188 +184,82 @@ size_t F4::prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4
 	//cout << index << " pairs\n";
 	size_t upper = 2*index;
 
-	unordered_map<const Term*, vector<pair<size_t, coeffType> > > pivotOps;
 	unordered_set<const Term*> termsUnordered;
 
 	vector<vector<Monomial> > rightSide;
-	rightSide.reserve(rows.size());
 
-	double testtimer = 0;
+	//double testtimer = 0;
 
-	for(size_t i = 0; i < rows.size(); i++) 
+	// Choose reductor polynomials from those in the current basis
+	//for(size_t i = 0; i < rows.size(); i++) 
+	for(size_t i = 0; i < poly_seq.size(); i++) 
 	{
-		size_t currentRow = rows[i].first;
-		rightSide.push_back( vector<Monomial>() );
+		//size_t currentRow = rows[i].first;
 		//rows[i].second->divToVector(groebnerBasis[currentRow].LT(), ir);
 		// For the pivot rows (even rows and lower part) we start at 1 
 
 		// precalculated monomials
 		// 50%
-		const Term* ir = rows[i].second->div(groebnerBasis[currentRow].LT());
-		vector<const Term*> pcm = ir->mulAll(groebnerBasis[currentRow], threads, testtimer);
+		//const Term* ir = rows[i].second->div(groebnerBasis[currentRow].LT());
+		//vector<const Term*> pcm = ir->mulAll(groebnerBasis[currentRow], threads, testtimer);
+		vector<const Term*> pcm = poly_seq.get_terms_vector(i);
+		vector<coeffType> coeffs = poly_seq.get_coeff_vector(i);
 
 		// 30%	
-		for(size_t j =  (i > upper || i % 2 == 0 ? 1 : 0);  j < groebnerBasis[currentRow].size() ; j++) 
+		for(size_t j =  (i > upper || i % 2 == 0 ? 1 : 0);  j < pcm.size() ; j++) 
 		{
-			coeffType coeff = groebnerBasis[currentRow][j].first;
+			//coeffType coeff = coeffs[j];
 			const Term* t = pcm[j];
-			bool wontFound = termsUnordered.count(t) > 0;	
+			bool already_considered = termsUnordered.count(t) > 0;	
 			bool found = false;
 
-			// If there is not yet a pivot for t, try to create one
-			if(!wontFound) {
-				found = pivots.count(t) > 0;
+			if(!already_considered) {
+				// If there is not yet a pivot for t, try to
+				// create one
+				//found = pivots.count(t) > 0;
+				found = poly_seq.check_pivot(t);
 				if(!found)
 				{
-					for(size_t k = 0; !found && k < groebnerBasis.size(); k++) 
+					//for(size_t k = 0; !found && k < groebnerBasis.size(); k++) 
+					for(size_t k = 0; k < groebnerBasis.size(); k++) 
 					{
 						if(inGroebnerBasis[k] && t->isDivisibleBy(groebnerBasis[k].LT())) {
 							found = true;
-							rows.push_back(make_pair(k, t));
-							pivots.insert(make_pair(t, rows.size()-1));
+							poly_seq.push_back(t->div(groebnerBasis[k].LT()), groebnerBasis[k], false);
+							//rows.push_back(make_pair(k, t));
+							//pivots.insert(make_pair(t, rows.size()-1));
 						}
 					}
 				}
 			}
 
 			// Eliminate if possible
-			if(found) {
-				pivotOps[t].push_back( make_pair(i, coeff) );
-			} else {
-				rightSide[i].push_back( make_pair(coeff, t) );
-				if(!wontFound) termsUnordered.insert(t);
+			if(!found && !already_considered) {
+				if(!already_considered) termsUnordered.insert(t);
 			}
 		}
 	}
 
-	terms.insert(termsUnordered.begin(), termsUnordered.end());
+	//terms.insert(termsUnordered.begin(), termsUnordered.end());
+	poly_seq.set_terms<unordered_set<const Term*>>(termsUnordered.begin(), termsUnordered.end());
 
 	//rs.assign(rightSide.size(), vector<coeffType>(terms.size(), 0) );
+	return poly_seq;
 
-   size_t pad = __COEFF_FIELD_INTVECSIZE;
-   
-   const size_t nrows = rightSide.size();
 
-   *prs = Matrix::allocate(nrows, (( terms.size()+pad-1 )/ pad ) * pad, 0); 
-
-   for(size_t i = 0; i < nrows; i++) 
-   {
-      size_t j = 0;
-      size_t k = 0;
-      for(set<const Term*, TermComparator>::iterator it = terms.begin(); j < rightSide[i].size() /*&& it != terms.end()*/; it++, k++)
-      {
-	 if(rightSide[i][j].second == *it)
-	 {
-	    (*prs)->setEntry(i, k, rightSide[i][j].first);        
-	    j++;
-	 }
-      }
-   }
-
-   rightSide.clear();
 	
-	map<const Term*, vector<pair<size_t, coeffType> >, TermComparator> pivotOpsOrdered(pivotOps.begin(), pivotOps.end(), tog);
-	pivotOps.clear();
-	ops.push_back( vector<F4Operation >() );
-
-	#if 1 
-	vector<size_t> l(nrows, 0);
-	for(map<const Term*, vector<pair<size_t, coeffType> >, TermComparator>::reverse_iterator it = pivotOpsOrdered.rbegin(); it != pivotOpsOrdered.rend(); it++)
-	{
-		size_t o = pivots[it->first];
-		for(size_t i = 0; i < it->second.size(); i++)
-		{
-			size_t t = it->second[i].first;
-			if(l[ o ] > l[t]) {
-				l[t] = l[o];
-			}
-			ops[ l[t] ].push_back( F4Operation(t,o,it->second[i].second) );
-			l[t]++; // one operation per level, attention this also affects the following if-statements
-
-			if(l[t] >= ops.size()) {
-				ops.push_back( vector<F4Operation>() );
-			}
-		}
-	}
-	#else
-	size_t l = 0;
-	for(map<const Term*, vector<pair<size_t, coeffType> >, TermComparator>::reverse_iterator it = pivotOpsOrdered.rbegin(); it != pivotOpsOrdered.rend(); it++)
-	{
-		size_t o = pivots[it->first];
-		for(size_t i = 0; i < it->second.size(); i++)
-		{
-			size_t t = it->second[i].first;
-			ops[ l ].push_back( F4Operation(t, o, it->second[i].second) );
-		}
-		l++;
-		ops.push_back( vector<F4Operation>() );
-	}
-	#endif
-	pivotOpsOrdered.clear();
-	ops.pop_back();
-	prepareTime += seconds() - timer;
-	//cout << "Operations:\t" << ops.size() << "\n";
-	//cout << "Preparation:\t" << seconds() - timer << "\n";
-	return upper;
 }
 
 void F4::reduce(F4PairSet& pairs, vector<Polynomial>& polys)
 {
-  double timer = seconds();
+  //double timer = seconds();
   
-	TermComparator tog(O, true);
-	set<const Term*, TermComparator> terms(tog);
-	vector<vector<F4Operation> > ops;
-
-  Matrix* rs;
   
   //vector<vector<size_t> > setOffset; 
-  size_t upper = prepare(pairs, polys, ops, terms, &rs);
-   
-  cerr << "prepared matrix: " << *rs << endl;
+  PolynomialSequence poly_seq = prepare(pairs);
 
-  // ELIMINATE
-  pReduce(ops, rs);
-
-  cerr << "pReduced matrix: " << *rs << endl;
+  poly_seq.reduce(polys);
    
-  ops.clear();
-  
-  vector<bool> empty(upper, false); // too large, FIX?
-	
-  gauss(rs, upper, empty);
-   
-  cerr << "Gaussed matrix: " << *rs << endl;  
-   
-  //cout << "GAUSSR:\t" << seconds()-timer << "\n";
-  // ELIMINATE END
-  for(size_t i = 1; i < upper; i+=2)
-  {
-    if(!empty[i])
-    {
-      Polynomial p(currentDegree);
-      size_t j = 0;
-      for(set<const Term*, TermComparator>::iterator it = terms.begin(); it != terms.end(); it++) 
-      {
-        const coeffType v = rs->getEntry(i, j);
-        
-	if(v != 0)
-           p.push_back(make_pair(v, *it));
-        
-	j++;
-      }
-      polys.push_back( p );
-    }
-  }
-	
-  cerr << "Resulting polynomials: " << polys.size() << " new elements: \n" << polys << endl;
-   
-  //postReduce(polys);
-
-  delete rs;
-
-  reductionTime += seconds()-timer;
-  //cout << "REDUCE:\t" << seconds()-timer << "\n";
 }
 
 void F4::postReduce(vector<Polynomial>& polys) 

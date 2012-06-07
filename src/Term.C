@@ -64,7 +64,7 @@ const Term* Term::lcm(const Term* other) const {
 	return owner->createElement(t);
 }
 
-vector<const Term*> Term::mulAll(Polynomial& in, int threads, double& timer) const {
+vector<const Term*> Term::mulAll(const Polynomial& in, int threads, double& timer) const {
 	vector<const Term*> result(in.size(), NULL);
 
 	if(this->degree == 0) {
