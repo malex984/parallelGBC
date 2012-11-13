@@ -22,7 +22,6 @@
 #include <unordered_set>
 #include "F4Utils.H"
 
-using namespace std;
 
 #ifndef F4_DEGREE_BITS
 #ifdef F4_COEFF_BITS
@@ -41,22 +40,23 @@ using namespace std;
 
 typedef __MONOID_DEGREE_TYPE degreeType;
 
+class TermInstance;
 class Term;
 
 class TMonoid {
 	protected:
-		struct TermEquals : std::binary_function<const Term* const, const Term* const , bool>
+		struct TermInstanceEquals : std::binary_function<const TermInstance* const, const TermInstance* const , bool>
 	{
-		bool operator()(const Term* const t1, const Term* const t2) const ;
+		bool operator()(const TermInstance* const t1, const TermInstance* const t2) const ;
 	};
-		struct TermHash : std::unary_function<const Term* const, std::size_t>
+		struct TermInstanceHash : std::unary_function<const TermInstance* const, std::size_t>
 	{
-		std::size_t operator()(const Term* const t ) const;
+		std::size_t operator()(const TermInstance* const t ) const;
 	};
 
-		typedef unordered_set<Term*, TermHash, TermEquals> TermSet;
-		TermSet terms;
-		Term* one;
+		typedef std::unordered_set<TermInstance*, TermInstanceHash, TermInstanceEquals> TermInstanceSet;
+		TermInstanceSet terms;
+		TermInstance* one;
 
 	public:
 		const size_t N;
@@ -64,16 +64,17 @@ class TMonoid {
 		TMonoid(size_t N);
 		
 
-		const Term* createElement(const string& s, degreeType min);
-		const Term* createElement(vector<long>& v);
-		const Term* createElement(Term* t);
+		const TermInstance* createElement(const std::string& s, degreeType min);
+		const TermInstance* createElement(const std::vector<degreeType>& v);
+		const TermInstance* createElement(TermInstance* t);
 
 		size_t size() const {
 			return terms.size();
 		}
-		const Term* getOne() const {
+		const TermInstance* getOne() const {
 			return this->one;
 		}
+		const Term one_term() const;
 		~TMonoid();
 	private:
 		TMonoid(const TMonoid& m) : N(m.N), D(m.D) { }

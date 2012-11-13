@@ -18,51 +18,74 @@
 #define POLYNOMIAL_H
 #include <iostream>
 #include <vector>
-#include "../include/Term.H"
-#include "../include/CoeffField.H"
-#include "../include/TOrdering.H"
+#include "Term.H"
+#include "CoeffField.H"
+#include "TOrdering.H"
 
-using namespace std;
-
-typedef pair<coeffType, const Term*> Monomial;
+typedef std::pair<coeffType, Term> Monomial;
 
 class Polynomial {
 	typedef std::vector<Monomial> monomials_type;
 	private:
-		monomials_type monomials;
+		std::vector<coeffType> coeffs;
+		std::vector<Term> terms;
 		degreeType sugarDegree;
 
 	public:
 		// Create empty polynomial (equal to 0)
 		Polynomial(degreeType s = 0) : sugarDegree(s) { }
 
-		Polynomial(std::vector<Monomial>& ms) : monomials(ms), sugarDegree(0)
+		Polynomial(std::vector<coeffType>& cs, std::vector<Term>& ts) :
+			sugarDegree(0)
+		{
+			if(ts.size() > 0) {
+				sugarDegree = ts[0].deg();
+			} else {
+				sugarDegree = 0;
+			}
+			if(ts.size() < cs.size()) {
+				cs.erase(cs.begin() + ts.size(), cs.end());
+			}
+			if(ts.size() > cs.size()) {
+				ts.erase(ts.begin() + cs.size(), ts.end());
+			}
+		}
+		Polynomial(std::vector<Monomial>& ms) : sugarDegree(0)
 		{ 
 			if(ms.size() > 0)
 			{ 
-				sugarDegree = ms[0].second->deg();
+				sugarDegree = ms[0].second.deg();
+				for(size_t i = 0; i < ms.size(); i++) {
+					coeffs.push_back(ms[i].first);
+					terms.push_back(ms[i].second);
+				}
 			}
 		}
 
-    Polynomial(const Term* t): sugarDegree(t->deg())
-    {
-			monomials.push_back(make_pair(1, t));
+		Polynomial(const Term& t) : sugarDegree(t.deg()) {
+			terms.push_back(t);
+			coeffs.push_back(1);
 		}
 
-		Polynomial(vector<Monomial>& ms, bool purify) : monomials(ms), sugarDegree(0)
+		Polynomial(std::vector<Monomial>& ms, bool purify) : sugarDegree(0)
 		{ 
 			if(ms.size() > 0)
 			{ 
-				sugarDegree = ms[0].second->deg();
+				sugarDegree = ms[0].second.deg();
+                                for(size_t i = 0; i < ms.size(); i++) {
+                                        coeffs.push_back(ms[i].first);
+                                        terms.push_back(ms[i].second);
+                                }
 			}
 			if(purify)
 			{ 
-				for(size_t i = 0; i < monomials.size(); i++)
+				for(size_t i = 0; i < coeffs.size(); i++)
 				{ 
-					for(size_t j = i+1; j < monomials.size();) {
-						if( monomials[i].second == monomials[j].second ) {
-							monomials[i].first += monomials[j].first;
-							monomials.erase(monomials.begin() + j);
+					for(size_t j = i+1; j < coeffs.size();) {
+						if( terms[i] == terms[j] ) {
+							coeffs[i] += coeffs[j];
+							coeffs.erase(coeffs.begin() + j);
+							terms.erase(terms.begin() + j);
 						} else {
 							j++; 
 						}
@@ -71,34 +94,51 @@ class Polynomial {
 			}
 		}
 
-		static Polynomial createInstance(const string& s, TMonoid& m, degreeType min = 1);
-		static vector<Polynomial> createList(const string& s, TMonoid& m, degreeType min = 1);
-
-		monomials_type::const_iterator begin() const {
-			return monomials.begin();
-		}
-		monomials_type::const_iterator end() const {
-			return monomials.end();
-		}
+		static Polynomial createInstance(const std::string& s, TMonoid& m, degreeType min = 1);
+		static std::vector<Polynomial> createList(const std::string& s, TMonoid& m, degreeType min = 1);
 
 		Monomial operator[](size_t i) const {
-			return monomials[i];
+			return std::make_pair(coeffs[i], terms[i]);
+		}
+
+		std::vector<coeffType>::const_iterator begin_coeffs() const {
+			return coeffs.begin();
+		}
+
+		std::vector<coeffType>::const_iterator end_coeffs() const {
+			return coeffs.end();
+		}
+
+		coeffType coeff(size_t i) const {
+			return coeffs[i];
+		}
+
+		std::vector<Term>::const_iterator begin_terms() const {
+			return terms.begin();
+		}
+
+		std::vector<Term>::const_iterator end_terms() const {
+			return terms.end();
+		}
+
+		Term term(size_t i) const {
+			return terms[i];
 		}
 
 		size_t size() const {
-			return monomials.size();
+			return coeffs.size();
 		}
 
 		size_t capacity() const {
-			return monomials.capacity();
+			return terms.capacity();
 		}
 
-		Polynomial mul(const Term* t) const;
+		Polynomial mul(const Term& t) const;
 
-		void mulBy(const Term* t);
+		void mulBy(const Term& t);
 
 		bool isZero() const {
-			return monomials.size() < 1 || monomials[0].first == 0; // Attention 0*LT+k*T with k != 0 will break this!
+			return coeffs.size() < 1 || coeffs[0] == 0; // Attention 0*LT+k*T with k != 0 will break this!
 		}
 
 		void sub(const Polynomial& other, const TOrdering* O, const CoeffField* f);
@@ -111,16 +151,16 @@ class Polynomial {
 
 		void order(const TOrdering* O);
 
-		const Term* lcmLT(const Polynomial& other) const {
-			return LT()->lcm(other.LT());
+		Term lcmLT(const Polynomial& other) const {
+			return LT().lcm(other.LT());
 		}
 
-		const Term* LT() const {
-			return monomials[0].second;
+		Term LT() const {
+			return terms[0];
 		}
 
 		coeffType LC() const {
-			return monomials[0].first;
+			return coeffs[0];
 		}
 
 //		void setSugar(degreeType s) {
@@ -132,17 +172,24 @@ class Polynomial {
 		}
 
 		void push_back(const Monomial& m) {
-			monomials.push_back(m);
+			coeffs.push_back(m.first);
+			terms.push_back(m.second);
+		}
+
+		void push_back(coeffType c, const Term& t) {
+			coeffs.push_back(c);
+			terms.push_back(t);
 		}
 };
 
-ostream& operator<< (ostream &out, const Polynomial &poly);
-ostream& operator<< (ostream& out, const vector<Polynomial> &polys);
+std::ostream& operator<< (std::ostream &out, const Polynomial &poly);
+std::ostream& operator<< (std::ostream& out,
+		const std::vector<Polynomial> &polys);
 
 class MonomialComparator {
 	public:
 		const TOrdering* O;
-		greater<coeffType> g;
+		std::greater<coeffType> g;
 
 
 		MonomialComparator(const TOrdering* O) : O(O) {}

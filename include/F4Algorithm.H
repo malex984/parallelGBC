@@ -17,16 +17,18 @@
 #ifndef F4_ALGORITHM_H
 #define F4_ALGORITHM_H
 
-#include "../include/Term.H"
-#include "../include/Polynomial.H"
-#include "../include/PolynomialSequence.H"
-#include "../include/F4Utils.H"
+#include "Term.H"
+#include "Polynomial.H"
+#include "PolynomialSequence.H"
+#include "F4Utils.H"
 
 #include <set>
 #include <vector>
 #include <map>
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
+#include <algorithm>
 #include <boost/bind.hpp>
+#include <iostream>
 
 #ifdef F4_THREADS
 	#define __F4_ALGORITHM_THREADS F4_THREADS
@@ -34,17 +36,15 @@
 	#define __F4_ALGORITHM_THREADS 1
 #endif
 
-using namespace boost;
-
 class F4Pair {
 	public:
-		const Term* LCM;
+		Term LCM;
 		size_t i;
 		size_t j;
 		bool marked;
 		degreeType sugar;
 
-		F4Pair(const Term* LCM, size_t i, size_t j, bool marked, degreeType sugar) : LCM(LCM), i(i), j(j), marked(marked), sugar(sugar)	 {};
+		F4Pair(const Term LCM, size_t i, size_t j, bool marked, degreeType sugar) : LCM(LCM), i(i), j(j), marked(marked), sugar(sugar)	 {};
 };
 
 class F4PairComparator {
@@ -59,7 +59,7 @@ class F4PairComparator {
 		}
 };
 
-typedef set<F4Pair,F4PairComparator> F4PairSet;
+typedef std::set<F4Pair,F4PairComparator> F4PairSet;
 
 class Matrix;
 
@@ -67,11 +67,26 @@ class F4 {
 	public:
     CoeffField* field;
     TMonoid& monoid;
-		vector<Polynomial> groebnerBasis;
-		vector<bool> inGroebnerBasis;
+
+		std::vector<Polynomial> groebnerBasis;
+		std::vector<bool> inGroebnerBasis;
 		const TOrdering* O;
 		degreeType currentDegree;
 		int threads;
+		/* Verbosity, which can be changed during runtime, nothing which should
+		 * influence performance.
+		 *
+		 * 1 - Runtime
+		 * 2 - Reduction time
+		 * 4 - Prepare time
+		 * 8 - Update time
+		 * 16 - Print sugar degree during reduction step
+		 * 32 - Print time of reduction step
+		 * 64 - Print matrix size during reduction step 
+		 */
+		int verbosity;
+		// There we write verbose messages
+		std::ostream* out;
 
 		F4(TMonoid& monoid) : monoid(monoid) {}
 		
@@ -86,11 +101,11 @@ class F4 {
 		//void gauss(Matrix* pm, size_t upper, vector<bool>& empty);
 		//void pReduce(vector<vector<F4Operation> >& ops, Matrix* prs);
 		PolynomialSequence prepare(F4PairSet& pairs);
+		void reduce(F4PairSet& pairs, std::vector<Polynomial>& polys);
 		//size_t prepare(F4PairSet& pairs, vector<Polynomial>& polys, vector<vector<F4Operation> >& ops, set<const Term*, TermComparator>& terms, Matrix **prs);
-		void reduce(F4PairSet& pairs, vector<Polynomial>& polys);
-		void postReduce(vector<Polynomial>& polys);
-		void updatePairs(F4PairSet& pairs, vector<Polynomial>& polys, bool initial = false);
-		vector<Polynomial> operator()(vector<Polynomial>& generators, const TOrdering* O, CoeffField* field, int threads = __F4_ALGORITHM_THREADS);
+		void postReduce(std::vector<Polynomial>& polys);
+		void updatePairs(F4PairSet& pairs, std::vector<Polynomial>& polys, bool initial = false);
+		std::vector<Polynomial> operator()(std::vector<Polynomial>& generators, const TOrdering* O, CoeffField* field, int threads = __F4_ALGORITHM_THREADS, int verbosity = 0, std::ostream& output = std::cout);
 };
 
 #endif

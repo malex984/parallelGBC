@@ -19,4 +19,4 @@ OBJ=test-f4.bin lex-f4.bin
 all: $(OBJ) run 
 
 run: $(OBJ)
-	for i in $(OBJ); do ./$$i ../input/cyclic3.txt; done;
+	for i in $(OBJ); do ./$$i ../input/cyclic4.txt; done;

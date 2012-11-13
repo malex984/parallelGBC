@@ -27,7 +27,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with parallelGBC.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "../include/F4.H"
+#include "F4.H"
 
 #include <boost/regex.hpp> 
 
@@ -72,7 +72,16 @@ int main(int argc, char* argv[])
 	if(argc > 2) {
 		istringstream( argv[2] ) >> threads;
 	}
-
+	// Set verbosity.
+	int verbosity = 0;
+	if(argc > 3) {
+		istringstream( argv[3] ) >> verbosity;
+	}
+	// Yeah, one more parameter: Print the groebner basis?
+	int printGB = 1;
+	if(argc > 4) {
+		istringstream( argv[4] ) >> printGB;
+	}
 	// Read the provided input file. Example still below.
 	fstream filestr (argv[1], fstream::in);
 	std::string s,t;
@@ -113,16 +122,25 @@ int main(int argc, char* argv[])
 	// doing everything twice shouldn't harm.
 	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::order), _1, o));
 	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::bringIn), _1, cf, false));
-//	for_each(list.begin(), list.end(), bind(mem_fn(&Polynomial::normalize), _1, cf));
 	// Create the f4 computer.
    F4 f4(m);
    
    // Compute the groebner basis for the polynomials in 'list' with 'threads' threads/processors 
-   vector<Polynomial> result = f4(list, o, cf, threads);
+	vector<Polynomial> result = f4(list, o, cf, threads, verbosity);
    
    // Return the size of the groebner basis
-   cout << "Size of GB:\t" << result.size() << "\nResult GB: " << result << endl;
-
+	if(printGB > 0)
+	{
+		for(size_t i = 0; i < result.size(); i++) {
+			if(i > 0) {
+				cout << ", ";
+			}
+			cout << result[i];
+		}
+		cout << "\n";
+	} else {
+		cout << "Size of GB:\t" << result.size() << "\n";
+	}
    // Clean up your memory
    delete o;
    delete cf;

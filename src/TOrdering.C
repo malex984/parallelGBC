@@ -14,17 +14,22 @@
  *  You should have received a copy of the GNU General Public License
  *  along with parallelGBC.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "../include/TOrdering.H"
-#include "../include/Term.H"
+#include "TOrdering.H"
+#include "Term.H"
 
-  int DegRevLexOrdering::cmp(const Term* a, const Term* b) const
+  int DegRevLexOrdering::cmp(const Term& a, const Term& b) const
   {   
+	  //std::cout<<"in DegRevLex::cmp, a: "<<a<<" b: "<<b<<std::endl;
     if(a == b) return 0;
-    if(a->deg() == b->deg())
+    //std::cout<<"not equal"<<std::endl;
+    if(a.deg() == b.deg())
     {   
+	    //std::cout<<"degrees equal"<<std::endl;
       for(size_t i = N; i > 0; i--)
       {   
-        degreeType r = a->at(i-1) - b->at(i-1);
+	      //std::cout<<"i: "<<i<<std::endl;
+        degreeType r = a[i-1] - b[i-1];
+	//std::cout<<"r: "<<r<<std::endl;
         if(r != 0)
         {   
           return r > 0 ? -1 : 1 ; 
@@ -32,15 +37,19 @@
       }   
       return 0;
     }   
-    return a->deg() < b->deg() ? -1 : 1;
+    return a.deg() < b.deg() ? -1 : 1;
   }
 
-  int LexOrdering::cmp(const Term* a, const Term* b) const 
+  int LexOrdering::cmp(const Term& a, const Term& b) const 
   {
+	  //std::cout<<"in Lex::cmp, a: "<<a<<" b: "<<b<<std::endl;
 	if(a == b) return 0;
+    //std::cout<<"not equal"<<std::endl;
 	for(long i = 0; i < N; i++)
 	{
-		degreeType r = a->at(i) - b->at(i);
+	      //std::cout<<"i: "<<i<<std::endl;
+		degreeType r = a[i] - b[i];
+	//std::cout<<"r: "<<r<<std::endl;
 		if(r != 0) {
 			return r < 0 ? -1 : 1;
 		}
